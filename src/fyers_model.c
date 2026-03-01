@@ -449,3 +449,27 @@ fyers_response_t* fyers_model_logout(fyers_model_t* model) {
     return make_post_request(model, FYERS_ENDPOINT_LOGOUT, "{}");
 }
 
+fyers_response_t* fyers_model_get_order_history(fyers_model_t* model, const char* params_json) {
+    char* query_str = json_to_query_string(params_json);
+    if (!query_str) {
+        // If JSON parsing fails, return NULL or try with original params
+        return NULL;
+    }
+    
+    fyers_response_t* response = make_get_request(model, FYERS_ENDPOINT_ORDER_HISTORY, query_str, false);
+    free(query_str);
+    return response;
+}
+
+fyers_response_t* fyers_model_get_trade_history(fyers_model_t* model, const char* params_json) {
+    char* query_str = json_to_query_string(params_json);
+    if (!query_str) {
+        // If JSON parsing fails, return NULL or try with original params
+        return NULL;
+    }
+    
+    fyers_response_t* response = make_get_request(model, FYERS_ENDPOINT_TRADE_HISTORY, query_str, false);
+    free(query_str);
+    return response;
+}
+

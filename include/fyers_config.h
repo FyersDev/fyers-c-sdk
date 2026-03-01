@@ -38,6 +38,8 @@ extern "C" {
 #define FYERS_ENDPOINT_LOGOUT "/logout"
 #define FYERS_ENDPOINT_PRICE_ALERT "/price-alert"
 #define FYERS_ENDPOINT_TOGGLE_ALERT "/toggle-alert"
+#define FYERS_ENDPOINT_ORDER_HISTORY "/order-history"
+#define FYERS_ENDPOINT_TRADE_HISTORY "/trade-history"
 
 // Smart order endpoints
 #define FYERS_ENDPOINT_CREATE_SMARTORDER_STEP "/smart-order/step"

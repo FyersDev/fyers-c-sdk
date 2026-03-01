@@ -44,6 +44,10 @@ FYERS_API fyers_response_t* fyers_model_get_orderbook(fyers_model_t* model, cons
 FYERS_API fyers_response_t* fyers_model_get_positions(fyers_model_t* model);
 FYERS_API fyers_response_t* fyers_model_get_market_status(fyers_model_t* model);
 
+//REPORTS APIs
+FYERS_API fyers_response_t* fyers_model_get_order_history(fyers_model_t* model, const char* params_json);
+FYERS_API fyers_response_t* fyers_model_get_trade_history(fyers_model_t* model, const char* params_json);
+
 // Order placement
 FYERS_API fyers_response_t* fyers_model_place_order(fyers_model_t* model, const char* order_json);
 FYERS_API fyers_response_t* fyers_model_place_multi_order(fyers_model_t* model, const char* order_json);

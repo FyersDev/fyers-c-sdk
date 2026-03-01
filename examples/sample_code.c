@@ -1771,6 +1771,33 @@ void example_activate_deactivate_smart_exit_trigger(fyers_session_t* session) {
     cJSON_free(req_str);
     cJSON_Delete(req);
 } 
+
+void fy_get_orderbook_history(fyers_session_t* session) {
+    fyers_model_t* model = create_model_from_session(session);
+    if (!model) return;
+    cJSON* req = cJSON_CreateObject();
+    cJSON_AddStringToObject(req, "symbol", "NSE:MAZDOCK-EQ");
+    char* req_str = cJSON_PrintUnformatted(req);
+    printf("Getting fy_get_orderbook_by_order_id\n");
+    fyers_response_t* response = fyers_model_get_order_history(model, req_str);
+    if (response) printf("fy_get_orderbook_by_order_id response: %s\n", response->data ? response->data : "(null)");
+    fyers_response_destroy(response);
+    fyers_model_destroy(model);
+}
+
+void fy_get_tradebook_history(fyers_session_t* session) {
+    fyers_model_t* model = create_model_from_session(session);
+    if (!model) return;
+    cJSON* req = cJSON_CreateObject();
+    cJSON_AddStringToObject(req, "symbol", "NSE:MAZDOCK-EQ");
+    char* req_str = cJSON_PrintUnformatted(req);
+    printf("Getting fy_get_tradebook_by_order_id\n");
+    fyers_response_t* response = fyers_model_get_trade_history(model, req_str);
+    if (response) printf("fy_get_tradebook_by_order_id response: %s\n", response->data ? response->data : "(null)");
+    fyers_response_destroy(response);
+    fyers_model_destroy(model);
+}
+
 int main() {
     // Replace with your app credentials
     // const char* client_id = "M0R4WW1PYU-100";
@@ -1778,7 +1805,7 @@ int main() {
     const char* redirect_uri = "https://trade.fyers.in/api-login/redirect-uri/index.html";
     const char* secret_key = "XKCP7PAISD";
     const char* auth_code = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhcHBfaWQiOiJNMFI0V1cxUFlVIiwidXVpZCI6Ijg4N2ZiNTUxMDdhMzRmMGM5Y2M0MzZlYjg0ZjFiMjNhIiwiaXBBZGRyIjoiIiwibm9uY2UiOiIiLCJzY29wZSI6IiIsImRpc3BsYXlfbmFtZSI6IllLMDQzOTEiLCJvbXMiOiJLMSIsImhzbV9rZXkiOiJmYmM2YmE3MGE3YWI2MzEwNDZlYzAxOTNiODgxY2M5NTAyMjhiMmRjNjI0YzYwNDc1NzJkNDAwMyIsImlzRGRwaUVuYWJsZWQiOiJZIiwiaXNNdGZFbmFibGVkIjoiWSIsImF1ZCI6IltcImQ6MVwiLFwiZDoyXCIsXCJ4OjBcIixcIng6MVwiLFwieDoyXCJdIiwiZXhwIjoxNzY3MjEyNjMwLCJpYXQiOjE3NjcxODI2MzAsImlzcyI6ImFwaS5sb2dpbi5meWVycy5pbiIsIm5iZiI6MTc2NzE4MjYzMCwic3ViIjoiYXV0aF9jb2RlIn0.y7sB3C0y4FzrEhaqpB_qiwN5GMAKBt64Y0GVQFIy7mo";
-    const char* access_token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOlsieDowIiwieDoxIl0sImF0X2hhc2giOiJnQUFBQUFCcFcwQ3JvQXRvT0ZqaFRPRUItZUpTQnJnQ0tZNWlhcGxwTW5HZkFiWk9YbzA3ZGdBSm0zSUd4STF1VFhUTWlRVlhQX3pqTHFxTGZhdnlPeEhNU1ZQdzVUSHNnakMwZzJJS3FFYmpob0V2OTdtLTRMND0iLCJkaXNwbGF5X25hbWUiOiIiLCJvbXMiOiJLMSIsImhzbV9rZXkiOiJmYmM2YmE3MGE3YWI2MzEwNDZlYzAxOTNiODgxY2M5NTAyMjhiMmRjNjI0YzYwNDc1NzJkNDAwMyIsImlzRGRwaUVuYWJsZWQiOiJZIiwiaXNNdGZFbmFibGVkIjoiWSIsImZ5X2lkIjoiWUswNDM5MSIsImFwcFR5cGUiOjEwMSwiZXhwIjoxNzY3NjU5NDAwLCJpYXQiOjE3Njc1ODgwMTEsImlzcyI6ImFwaS5meWVycy5pbiIsIm5iZiI6MTc2NzU4ODAxMSwic3ViIjoiYWNjZXNzX3Rva2VuIn0.h0hpe___B_l80dr9Gra4iB0s9PYq7Jcj-18QBFug09A";
+    const char* access_token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOlsieDowIiwieDoxIl0sImF0X2hhc2giOiJnQUFBQUFCcHBCX0JMbnBCMTUtX0JDZnBTa2czcS0yZ0I5cjVfa1BDeUZPWmRnTlJLZXpheHdqdzZDdEN3YjMtT05HVU9oejhlSG40d0FWWEs0a0E0eTc2d1VvMTVTeWVCZGZ1N3hncWQzY2s3bGZ5Mm1qd0ZhMD0iLCJkaXNwbGF5X25hbWUiOiIiLCJvbXMiOiJLMSIsImhzbV9rZXkiOiIyZTNkY2E0ZTA1ZjdhZjkxMGI5NmRmZGRjZDIyZTJhOWNjZjhmYTMzYTFlZjNhOWRkZTFiN2Q2YSIsImlzRGRwaUVuYWJsZWQiOiJZIiwiaXNNdGZFbmFibGVkIjoiTiIsImZ5X2lkIjoiRkFCOTIyNDMiLCJhcHBUeXBlIjoxMDEsImV4cCI6MTc3MjQxMTQwMCwiaWF0IjoxNzcyMzYzNzEzLCJpc3MiOiJhcGkuZnllcnMuaW4iLCJuYmYiOjE3NzIzNjM3MTMsInN1YiI6ImFjY2Vzc190b2tlbiJ9.I8W8Rvn_diH1SBDRRrHT0sSUnZesdGrpMY9b175PL6U";
 
 
     // Create session
@@ -1813,6 +1840,11 @@ int main() {
     // fy_get_positions(session); // get positions
     // fy_get_tradebook(session); // get tradebook
     // fy_get_tradebook_by_order_tag(session); // get tradebook by order tag
+
+
+    //reports APIS
+    // fy_get_orderbook_history(session); // get orderbook history
+    // fy_get_tradebook_history(session); // get tradebook history
 
     // Order Placement
     // fy_place_order(session); // place order
