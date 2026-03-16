@@ -3,16 +3,23 @@
  * @brief Fyers Order WebSocket implementation for real-time order/trade/position updates
  */
 
-#include "fyers_order_ws.h"
-#include "fyers_logger.h"
-#include "fyers_http_client.h"
-#include <libwebsockets.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stdio.h>
-#include <pthread.h>
-#include <unistd.h>
-#include <cjson/cJSON.h>
+ #include "fyers_order_ws.h"
+ #include "fyers_logger.h"
+ #include "fyers_http_client.h"
+ #include <libwebsockets.h>
+ #include <stdlib.h>
+ #include <string.h>
+ #include <stdio.h>
+ #include <pthread.h>
+ #ifdef _WIN32
+ #include <winsock2.h>
+ #include <windows.h>
+ #define sleep(x) Sleep((x)*1000)
+ #define usleep(x) Sleep((x)/1000)
+ #else
+ #include <unistd.h>
+ #endif
+ #include <cjson/cJSON.h>
 
 // Constants
 #define ORDER_WS_URL "wss://socket.fyers.in/trade/v3"
