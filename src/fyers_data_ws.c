@@ -3,25 +3,32 @@
  * @brief Fyers Data WebSocket implementation for real-time market data
  */
 
-#include "fyers_data_ws.h"
-#include "fyers_logger.h"
-#include "fyers_http_client.h"
-#include "fyers_config.h"
-#include "fyers_model.h"
-#include <libwebsockets.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stdio.h>
-#include <stdint.h>
-#include <time.h>
-#include <pthread.h>
-#include <unistd.h>
-#include <arpa/inet.h>
-#include <cjson/cJSON.h>
-#include <openssl/bio.h>
-#include <openssl/evp.h>
-#include <openssl/buffer.h>
-#include <math.h>
+ #include "fyers_data_ws.h"
+ #include "fyers_logger.h"
+ #include "fyers_http_client.h"
+ #include "fyers_config.h"
+ #include "fyers_model.h"
+ #include <libwebsockets.h>
+ #include <stdlib.h>
+ #include <string.h>
+ #include <stdio.h>
+ #include <stdint.h>
+ #include <time.h>
+ #include <pthread.h>
+ #ifdef _WIN32
+ #include <winsock2.h>
+ #include <windows.h>
+ #define sleep(x) Sleep((x)*1000)
+ #define usleep(x) Sleep((x)/1000)
+ #else
+ #include <unistd.h>
+ #include <arpa/inet.h>
+ #endif
+ #include <cjson/cJSON.h>
+ #include <openssl/bio.h>
+ #include <openssl/evp.h>
+ #include <openssl/buffer.h>
+ #include <math.h>
 
 // Constants
 #define DATA_WS_URL "wss://socket.fyers.in/hsm/v1-5/prod"
