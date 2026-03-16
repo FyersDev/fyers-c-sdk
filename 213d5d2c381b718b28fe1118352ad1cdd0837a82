@@ -1,0 +1,23 @@
+CMakeLists.txt
+  3b116e4231eb0c96 26,54
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.0.37",
+  "base_commit_sha": "213d5d2c381b718b28fe1118352ad1cdd0837a82",
+  "prompts": {
+    "3b116e4231eb0c96": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "4bb8c1b5-e955-44e4-ba13-3ba1cd9d6381",
+        "model": "composer-1.5"
+      },
+      "human_author": "kishore-fyers <kishorekumar@fyers.in>",
+      "messages": [],
+      "total_additions": 4,
+      "total_deletions": 0,
+      "accepted_lines": 2,
+      "overriden_lines": 0
+    }
+  }
+}
