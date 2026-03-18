@@ -24,6 +24,17 @@ Fyers API is a set of REST-like APIs that provide integration with our in-house 
 | OpenSSL | `libssl-dev` | `openssl` | `openssl` |
 | libwebsockets | `libwebsockets-dev` | `libwebsockets` | `libwebsockets` |
 
+## Getting the source
+
+Clone the repository (or download and extract the source), then build from that directory:
+
+```bash
+git clone <repository-url> fyers-c-sdk
+cd fyers-c-sdk
+```
+
+Replace `<repository-url>` with the actual repo URL. All build and install steps below are run from this SDK root directory.
+
 ## Usage
 
 ### Linux (Ubuntu/Debian)
@@ -57,23 +68,21 @@ sudo make install
 
 1. Install [Visual Studio](https://visualstudio.microsoft.com/) (2019+) with "Desktop development with C++"
 2. Install [CMake](https://cmake.org/download/)
-3. Install [vcpkg](https://vcpkg.io/) and run:
+3. Install [vcpkg](https://vcpkg.io/) and install dependencies for **x64**:
 
 ```powershell
-vcpkg install curl cjson openssl libwebsockets
+vcpkg install cjson:x64-windows curl:x64-windows openssl:x64-windows libwebsockets:x64-windows
 ```
 
-4. Build:
+4. Build (from the SDK root directory):
 
 ```powershell
-mkdir build
-cd build
-cmake .. -DCMAKE_TOOLCHAIN_FILE=[path-to-vcpkg]/scripts/buildsystems/vcpkg.cmake
-cmake --build . --config Release
-cmake --install . --prefix C:\fyers-sdk
+cmake -S . -B build -DCMAKE_TOOLCHAIN_FILE=C:\vcpkg\scripts\buildsystems\vcpkg.cmake -A x64
+cmake --build build --config Release
+cmake --install build --config Release --prefix C:\fyers-sdk
 ```
 
-Add the `bin/` directory to your PATH, or copy `fyers-api-c.dll` next to your executable.
+Use your actual vcpkg path if it is not `C:\vcpkg`. Add the install `bin/` directory to your PATH, or copy `fyers-api-c.dll` next to your executable.
 
 ### Link in Your Project
 
