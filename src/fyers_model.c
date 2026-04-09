@@ -32,7 +32,7 @@ fyers_model_t* fyers_model_create(const char* client_id,
         return NULL;
     }
 
-    fyers_model_t* model = (fyers_model_t*)malloc(sizeof(fyers_model_t));
+    fyers_model_t* model = (fyers_model_t*)calloc(1, sizeof(fyers_model_t));
     if (!model) {
         return NULL;
     }
@@ -45,13 +45,12 @@ fyers_model_t* fyers_model_create(const char* client_id,
     size_t header_len = strlen(client_id) + strlen(access_token) + 2;
     model->header = (char*)malloc(header_len);
     snprintf(model->header, header_len, "%s:%s", client_id, access_token);
-    
-    if (model->api_logger) {
-        fyers_logger_debug(model->api_logger, "Model header created: '%s' (client_id='%s', access_token length=%zu)", 
-                          model->header, client_id, strlen(access_token));
-    }
 
     model->api_logger = fyers_logger_create("FyersAPI", log_level, log_path);
+    if (model->api_logger) {
+        fyers_logger_debug(model->api_logger, "Model header created: '%s' (client_id='%s', access_token length=%zu)",
+                          model->header, client_id, strlen(access_token));
+    }
     model->request_logger = fyers_logger_create("FyersAPIRequest", FYERS_LOG_DEBUG, log_path);
     model->http_client = fyers_http_client_create(model->api_logger, model->request_logger);
 
