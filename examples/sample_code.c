@@ -1295,7 +1295,7 @@ void fy_get_depth(fyers_session_t* session) {
 }
 
 void fy_get_option_chain(fyers_session_t* session) {
-    fyers_session_set_access_token(session, "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOlsieDowIl0sImF0X2hhc2giOiJnQUFBQUFCcDJFanNIMlhDY2hjRllNeTFLNWZPd2hUVmRGTGRGQW96TlZocDJJMmtxZmMzRVgwa1FsZTBLeFlYSjlZaXpSRzNqQktaRHJrY3lXOWpVNjVRMzVfV3ZhT1VhQkhBbnlfZXlnM3BTdEdIeFJEcGNndz0iLCJkaXNwbGF5X25hbWUiOiIiLCJvbXMiOiJLMSIsImhzbV9rZXkiOiJjZGE1NGVmMDU1NGYzMmFjOTg2NWViNzMxMGNiMzk1ZmRiYTc1MTY5ZTY3NWNjZjc3OWJjMDM0ZCIsImlzRGRwaUVuYWJsZWQiOiJOIiwiaXNNdGZFbmFibGVkIjoiWSIsImZ5X2lkIjoiRkFGNTA2NzUiLCJhcHBUeXBlIjoxMDEsImV4cCI6MTc3NTg2NzQwMCwiaWF0IjoxNzc1NzgyMTI0LCJpc3MiOiJhcGkuZnllcnMuaW4iLCJuYmYiOjE3NzU3ODIxMjQsInN1YiI6ImFjY2Vzc190b2tlbiJ9.PfH20KYyW33OTyhLXJ1_eQwroW0_bAEAlWLG-_auBh4");
+    fyers_session_set_access_token(session, "eb..");
 
     const char* client_id = fyers_session_get_client_id(session);
     const char* access_token = fyers_session_get_access_token(session);
@@ -1802,11 +1802,11 @@ void fy_get_tradebook_history(fyers_session_t* session) {
 int main() {
     // Replace with your app credentials
     // const char* client_id = "M0R4WW1PYU-100";
-    const char* client_id = "Z0G0WQQT6T-101";
+    const char* client_id = "";
     const char* redirect_uri = "https://trade.fyers.in/api-login/redirect-uri/index.html";
-    const char* secret_key = "XKCP7PAISD";
-    const char* auth_code = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOlsieDowIl0sImF0X2hhc2giOiJnQUFBQUFCcDJFanNIMlhDY2hjRllNeTFLNWZPd2hUVmRGTGRGQW96TlZocDJJMmtxZmMzRVgwa1FsZTBLeFlYSjlZaXpSRzNqQktaRHJrY3lXOWpVNjVRMzVfV3ZhT1VhQkhBbnlfZXlnM3BTdEdIeFJEcGNndz0iLCJkaXNwbGF5X25hbWUiOiIiLCJvbXMiOiJLMSIsImhzbV9rZXkiOiJjZGE1NGVmMDU1NGYzMmFjOTg2NWViNzMxMGNiMzk1ZmRiYTc1MTY5ZTY3NWNjZjc3OWJjMDM0ZCIsImlzRGRwaUVuYWJsZWQiOiJOIiwiaXNNdGZFbmFibGVkIjoiWSIsImZ5X2lkIjoiRkFGNTA2NzUiLCJhcHBUeXBlIjoxMDEsImV4cCI6MTc3NTg2NzQwMCwiaWF0IjoxNzc1NzgyMTI0LCJpc3MiOiJhcGkuZnllcnMuaW4iLCJuYmYiOjE3NzU3ODIxMjQsInN1YiI6ImFjY2Vzc190b2tlbiJ9.PfH20KYyW33OTyhLXJ1_eQwroW0_bAEAlWLG-_auBh4";
-    const char* access_token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOlsieDowIl0sImF0X2hhc2giOiJnQUFBQUFCcDJFanNIMlhDY2hjRllNeTFLNWZPd2hUVmRGTGRGQW96TlZocDJJMmtxZmMzRVgwa1FsZTBLeFlYSjlZaXpSRzNqQktaRHJrY3lXOWpVNjVRMzVfV3ZhT1VhQkhBbnlfZXlnM3BTdEdIeFJEcGNndz0iLCJkaXNwbGF5X25hbWUiOiIiLCJvbXMiOiJLMSIsImhzbV9rZXkiOiJjZGE1NGVmMDU1NGYzMmFjOTg2NWViNzMxMGNiMzk1ZmRiYTc1MTY5ZTY3NWNjZjc3OWJjMDM0ZCIsImlzRGRwaUVuYWJsZWQiOiJOIiwiaXNNdGZFbmFibGVkIjoiWSIsImZ5X2lkIjoiRkFGNTA2NzUiLCJhcHBUeXBlIjoxMDEsImV4cCI6MTc3NTg2NzQwMCwiaWF0IjoxNzc1NzgyMTI0LCJpc3MiOiJhcGkuZnllcnMuaW4iLCJuYmYiOjE3NzU3ODIxMjQsInN1YiI6ImFjY2Vzc190b2tlbiJ9.PfH20KYyW33OTyhLXJ1_eQwroW0_bAEAlWLG-_auBh4";
+    const char* secret_key = "";
+    const char* auth_code = "";
+    const char* access_token = "";
 
 
     // Create session
