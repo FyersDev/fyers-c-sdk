@@ -32,7 +32,7 @@ fyers_model_t* fyers_model_create(const char* client_id,
         return NULL;
     }
 
-    fyers_model_t* model = (fyers_model_t*)calloc(1, sizeof(fyers_model_t));
+    fyers_model_t* model = (fyers_model_t*)malloc( sizeof(fyers_model_t));
     if (!model) {
         return NULL;
     }
