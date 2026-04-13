@@ -1,6 +1,6 @@
 <a href="https://fyers.in/"><img src="https://assets.fyers.in/images/logo.svg" align="right" /></a>
 
-# Fyers API C SDK : fyers-api-c - v1.1.1
+# Fyers API C SDK : fyers-api-c - v1.1.2
 
 The official Fyers C SDK for API-V3 Users [FYERS API](https://fyers.in/products/api/).
 
