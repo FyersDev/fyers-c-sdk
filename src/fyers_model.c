@@ -464,3 +464,33 @@ fyers_response_t* fyers_model_get_trade_history(fyers_model_t* model, const char
     return response;
 }
 
+
+fyers_response_t* fyers_model_get_charges_history(fyers_model_t* model, const char* params_json) {
+    char* query_str = json_to_query_string(params_json);
+    
+    fyers_response_t* response = make_get_request(model, FYERS_ENDPOINT_CHARGES_HISTORY, query_str, false);
+    free(query_str);
+    return response;
+}
+
+fyers_response_t* fyers_model_get_realised_profit(fyers_model_t* model, const char* params_json) {
+    char* query_str = json_to_query_string(params_json);
+    
+    fyers_response_t* response = make_get_request(model, FYERS_ENDPOINT_REALISED_PROFIT, query_str, false);
+    free(query_str);
+    return response;
+}
+
+fyers_response_t* fyers_model_get_tax_pnl_history(fyers_model_t* model, const char* params_json) {
+    char* query_str = json_to_query_string(params_json);
+    fyers_response_t* response = make_get_request(model, FYERS_ENDPOINT_TAX_PNL_HISTORY, query_str, false);
+    free(query_str);
+    return response;
+}
+
+fyers_response_t* fyers_model_get_ledger_history(fyers_model_t* model, const char* params_json) {
+    char* query_str = json_to_query_string(params_json);
+    fyers_response_t* response = make_get_request(model, FYERS_ENDPOINT_LEDGER_HISTORY, query_str, false);
+    free(query_str);
+    return response;
+}

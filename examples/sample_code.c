@@ -1799,6 +1799,62 @@ void fy_get_tradebook_history(fyers_session_t* session) {
     fyers_model_destroy(model);
 }
 
+void fy_get_charges_history(fyers_session_t* session) {
+    fyers_model_t* model = create_model_from_session(session);
+    if (!model) return;
+    cJSON* req = cJSON_CreateObject();
+    cJSON_AddStringToObject(req, "page_no", "1");
+    cJSON_AddStringToObject(req, "page_size", "10");
+    char* req_str = cJSON_PrintUnformatted(req);
+    printf("Getting fy_get_charges_history\n");
+    fyers_response_t* response = fyers_model_get_charges_history(model, req_str);
+    if (response) printf("fy_get_charges_history response: %s\n", response->data ? response->data : "(null)");
+    fyers_response_destroy(response);
+    fyers_model_destroy(model);
+}
+
+void fy_get_realised_profit(fyers_session_t* session) {
+    fyers_model_t* model = create_model_from_session(session);
+    if (!model) return;
+    cJSON* req = cJSON_CreateObject();
+    cJSON_AddStringToObject(req, "page_no", "1");
+    cJSON_AddStringToObject(req, "page_size", "10");
+    char* req_str = cJSON_PrintUnformatted(req);
+    printf("Getting fy_get_realised_profit\n");
+    fyers_response_t* response = fyers_model_get_realised_profit(model, req_str);
+    if (response) printf("fy_get_realised_profit response: %s\n", response->data ? response->data : "(null)");
+    fyers_response_destroy(response);
+    fyers_model_destroy(model);
+}
+
+void fy_get_tax_pnl_history(fyers_session_t* session) {
+    fyers_model_t* model = create_model_from_session(session);
+    if (!model) return;
+    cJSON* req = cJSON_CreateObject();
+    cJSON_AddStringToObject(req, "page_no", "1");
+    cJSON_AddStringToObject(req, "page_size", "10");
+    char* req_str = cJSON_PrintUnformatted(req);
+    printf("Getting fy_get_tax_pnl_history\n");
+    fyers_response_t* response = fyers_model_get_tax_pnl_history(model, req_str);
+    if (response) printf("fy_get_tax_pnl_history response: %s\n", response->data ? response->data : "(null)");
+    fyers_response_destroy(response);
+    fyers_model_destroy(model);
+}
+
+void fy_get_ledger_history(fyers_session_t* session) {
+    fyers_model_t* model = create_model_from_session(session);
+    if (!model) return;
+    cJSON* req = cJSON_CreateObject();
+    cJSON_AddStringToObject(req, "page_no", "1");
+    cJSON_AddStringToObject(req, "page_size", "10");
+    char* req_str = cJSON_PrintUnformatted(req);
+    printf("Getting fy_get_ledger_history\n");
+    fyers_response_t* response = fyers_model_get_ledger_history(model, req_str);
+    if (response) printf("fy_get_ledger_history response: %s\n", response->data ? response->data : "(null)");
+    fyers_response_destroy(response);
+    fyers_model_destroy(model);
+}
+
 int main() {
     // Replace with your app credentials
     // const char* client_id = "M0R4WW1PYU-100";
@@ -1846,6 +1902,10 @@ int main() {
     //reports APIS
     // fy_get_orderbook_history(session); // get orderbook history
     // fy_get_tradebook_history(session); // get tradebook history
+    // fy_get_charges_history(session); // get charges history
+    // fy_get_realised_profit(session); // get realised profit
+    // fy_get_tax_pnl_history(session); // get tax pnl history
+    // fy_get_ledger_history(session); // get ledger history
 
     // Order Placement
     // fy_place_order(session); // place order
