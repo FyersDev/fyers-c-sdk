@@ -47,6 +47,10 @@ FYERS_API fyers_response_t* fyers_model_get_market_status(fyers_model_t* model);
 //REPORTS APIs
 FYERS_API fyers_response_t* fyers_model_get_order_history(fyers_model_t* model, const char* params_json);
 FYERS_API fyers_response_t* fyers_model_get_trade_history(fyers_model_t* model, const char* params_json);
+FYERS_API fyers_response_t* fyers_model_get_charges_history(fyers_model_t* model, const char* params_json);
+FYERS_API fyers_response_t* fyers_model_get_realised_profit(fyers_model_t* model, const char* params_json);
+FYERS_API fyers_response_t* fyers_model_get_tax_pnl_history(fyers_model_t* model, const char* params_json);
+FYERS_API fyers_response_t* fyers_model_get_ledger_history(fyers_model_t* model, const char* params_json);
 
 // Order placement
 FYERS_API fyers_response_t* fyers_model_place_order(fyers_model_t* model, const char* order_json);

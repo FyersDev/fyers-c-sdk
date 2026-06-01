@@ -40,6 +40,10 @@ extern "C" {
 #define FYERS_ENDPOINT_TOGGLE_ALERT "/toggle-alert"
 #define FYERS_ENDPOINT_ORDER_HISTORY "/order-history"
 #define FYERS_ENDPOINT_TRADE_HISTORY "/trade-history"
+#define FYERS_ENDPOINT_CHARGES_HISTORY "/charges-history"
+#define FYERS_ENDPOINT_REALISED_PROFIT "/realised-pnl-history"
+#define FYERS_ENDPOINT_TAX_PNL_HISTORY "/tax-pnl-history"
+#define FYERS_ENDPOINT_LEDGER_HISTORY "/ledger-history"
 
 // Smart order endpoints
 #define FYERS_ENDPOINT_CREATE_SMARTORDER_STEP "/smart-order/step"
