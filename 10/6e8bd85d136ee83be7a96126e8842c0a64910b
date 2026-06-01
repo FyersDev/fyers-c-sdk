@@ -1,0 +1,20 @@
+include/fyers_config.h
+  h_55e9ed7a384a48 43-46
+src/fyers_model.c
+  h_55e9ed7a384a48 467-496
+include/fyers_model.h
+  h_55e9ed7a384a48 50-53
+examples/sample_code.c
+  h_55e9ed7a384a48 1802-1857,1905-1908
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "106e8bd85d136ee83be7a96126e8842c0a64910b",
+  "prompts": {},
+  "humans": {
+    "h_55e9ed7a384a48": {
+      "author": "Roshan Ramakrishna Anegundi <em1094@FYPLMB10264.local>"
+    }
+  }
+}
