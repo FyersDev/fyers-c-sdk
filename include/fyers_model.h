@@ -76,6 +76,9 @@ FYERS_API fyers_response_t* fyers_model_convert_position(fyers_model_t* model, c
 
 // Market data APIs
 FYERS_API fyers_response_t* fyers_model_get_history(fyers_model_t* model, const char* params_json);
+FYERS_API fyers_response_t* fyers_model_get_history_expiry_dates(fyers_model_t* model, const char* params_json);
+FYERS_API fyers_response_t* fyers_model_get_history_underlying_symbols(fyers_model_t* model, const char* params_json);
+FYERS_API fyers_response_t* fyers_model_get_futures_chain(fyers_model_t* model, const char* symbol);
 FYERS_API fyers_response_t* fyers_model_get_quotes(fyers_model_t* model, const char* symbols);
 FYERS_API fyers_response_t* fyers_model_get_depth(fyers_model_t* model, const char* symbol, int ohlcv_flag);
 FYERS_API fyers_response_t* fyers_model_get_option_chain(fyers_model_t* model, const char* params_json);
