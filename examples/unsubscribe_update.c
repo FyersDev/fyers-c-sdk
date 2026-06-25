@@ -50,7 +50,7 @@ void on_close(fyers_data_ws_t* ws, const char* reason) {
 int main() {
     fyers_init();
     
-    const char* access_token = "Z0G0WQQT6T-101:eyJ...";
+    const char* access_token = "ABCDEFGHIJKL-101:eyJ...";
     
     fyers_data_ws_t* ws = fyers_data_ws_create(
         access_token,
