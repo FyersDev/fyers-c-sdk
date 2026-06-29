@@ -1,6 +1,6 @@
 <a href="https://fyers.in/"><img src="https://assets.fyers.in/images/logo.svg" align="right" /></a>
 
-# Fyers API C SDK : fyers-api-c - v1.1.2
+# Fyers API C SDK : fyers-api-c - v1.2.0
 
 The official Fyers C SDK for API-V3 Users [FYERS API](https://fyers.in/products/api/).
 
@@ -205,6 +205,13 @@ Try running the sample code from the [Fyers API documentation](https://myapi.fye
 * Quotes
 * Market Depth
 * Option Chain
+
+#### Screeners
+
+* Screeners Config
+* Screeners Query
+* Screeners Candlestick
+* Screeners Technical
 
 #### Price Alert
 

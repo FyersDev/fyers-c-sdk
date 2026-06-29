@@ -1855,14 +1855,61 @@ void fy_get_ledger_history(fyers_session_t* session) {
     fyers_model_destroy(model);
 }
 
+void fy_get_screeners_config(fyers_session_t* session) {
+    fyers_model_t* model = create_model_from_session(session);
+    if (!model) return;
+    printf("Getting fy_get_screeners_config\n");
+    fyers_response_t* response = fyers_model_get_screeners_config(model);
+    if (response) printf("fy_get_screeners_config response: %s\n", response->data ? response->data : "(null)");
+    fyers_response_destroy(response);
+    fyers_model_destroy(model);
+}
+
+void fy_get_screeners_query(fyers_session_t* session) {
+    fyers_model_t* model = create_model_from_session(session);
+    if (!model) return;
+    cJSON* req = cJSON_CreateObject();
+    cJSON_AddStringToObject(req, "screener", "top_gainers");
+    cJSON_AddStringToObject(req, "universe", "iw001");
+    cJSON_AddStringToObject(req, "fields", "market_cap");
+    cJSON_AddStringToObject(req, "order_by", "t0_per_change");
+    cJSON_AddStringToObject(req, "order", "desc");
+    char* req_str = cJSON_PrintUnformatted(req);
+    printf("Getting fy_get_screeners_query\n");
+    fyers_response_t* response = fyers_model_get_screeners_query(model, req_str);
+    if (response) printf("fy_get_screeners_query response: %s\n", response->data ? response->data : "(null)");
+    fyers_response_destroy(response);
+    fyers_model_destroy(model);
+}
+
+void fy_get_screeners_candlestick(fyers_session_t* session) {
+    fyers_model_t* model = create_model_from_session(session);
+    if (!model) return;
+    printf("Getting fy_get_screeners_candlestick\n");
+    fyers_response_t* response = fyers_model_get_screeners_candlestick(model, "dragonfly_doji");
+    if (response) printf("fy_get_screeners_candlestick response: %s\n", response->data ? response->data : "(null)");
+    fyers_response_destroy(response);
+    fyers_model_destroy(model);
+}
+
+void fy_get_screeners_technical(fyers_session_t* session) {
+    fyers_model_t* model = create_model_from_session(session);
+    if (!model) return;
+    printf("Getting fy_get_screeners_technical\n");
+    fyers_response_t* response = fyers_model_get_screeners_technical(model, "macd_crossed_above_signal_line");
+    if (response) printf("fy_get_screeners_technical response: %s\n", response->data ? response->data : "(null)");
+    fyers_response_destroy(response);
+    fyers_model_destroy(model);
+}
+
 int main() {
     // Replace with your app credentials
     // const char* client_id = "M0R4WW1PYU-100";
-    const char* client_id = "";
+    const char* client_id = "T1A9F99GC1-200:";
     const char* redirect_uri = "https://trade.fyers.in/api-login/redirect-uri/index.html";
     const char* secret_key = "";
     const char* auth_code = "";
-    const char* access_token = "";
+    const char* access_token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOlsiZDoxIiwiZDoyIiwieDowIiwieDoxIiwieDoyIl0sImF0X2hhc2giOiJnQUFBQUFCcVFkT0pkTmtnUUZhMWRvbmllY2ZhWC11SVU1X011QnMyN2hqRGh0VXhCOTItODVaNlI2YlozYmdDdG8xZm9GZWtoQ3pRUEtsUWIwQ2E0ZDZkVFZtREp6UFAtTC1Gbmo3U0tBZmJYbThHNGx6OFdhUT0iLCJkaXNwbGF5X25hbWUiOiIiLCJvbXMiOiJLMSIsImhzbV9rZXkiOiIwZDkyMzNkZDQ5M2YyYWJmZmJhN2ZhY2RlOTkyNWQxMGQxYzAyZjQ4ODdjYTM4YzllNDM5ZmRlMyIsImlzRGRwaUVuYWJsZWQiOiJZIiwiaXNNdGZFbmFibGVkIjoiWSIsImZ5X2lkIjoiWUswNDM5MSIsImFwcFR5cGUiOjIwMCwiZXhwIjoxNzgyNzc5NDAwLCJpYXQiOjE3ODI2OTg4ODksImlzcyI6ImFwaS5meWVycy5pbiIsIm5iZiI6MTc4MjY5ODg4OSwic3ViIjoiYWNjZXNzX3Rva2VuIn0.MUd3pchgFc_Pxlz6GYSdDDDsQ1BI-lPIgbeB3QiKg4U";
 
 
     // Create session
@@ -1938,6 +1985,12 @@ int main() {
     // fy_get_quotes(session); // get quotes
     // fy_get_depth(session); // get depth
     //fy_get_option_chain(session); // get option chain
+
+    // Screeners
+    fy_get_screeners_config(session); // get screeners config
+    fy_get_screeners_query(session); // get screeners query
+    fy_get_screeners_candlestick(session); // get screeners candlestick
+    fy_get_screeners_technical(session); // get screeners technical
 
     // Pirce Alerts
     // fy_create_alert(session); // create alert

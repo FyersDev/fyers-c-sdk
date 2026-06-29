@@ -80,6 +80,12 @@ FYERS_API fyers_response_t* fyers_model_get_quotes(fyers_model_t* model, const c
 FYERS_API fyers_response_t* fyers_model_get_depth(fyers_model_t* model, const char* symbol, int ohlcv_flag);
 FYERS_API fyers_response_t* fyers_model_get_option_chain(fyers_model_t* model, const char* params_json);
 
+// Screeners APIs
+FYERS_API fyers_response_t* fyers_model_get_screeners_config(fyers_model_t* model);
+FYERS_API fyers_response_t* fyers_model_get_screeners_query(fyers_model_t* model, const char* params_json);
+FYERS_API fyers_response_t* fyers_model_get_screeners_candlestick(fyers_model_t* model, const char* screener);
+FYERS_API fyers_response_t* fyers_model_get_screeners_technical(fyers_model_t* model, const char* screener);
+
 // GTT APIs
 FYERS_API fyers_response_t* fyers_model_get_gtt_orderbook(fyers_model_t* model);
 
