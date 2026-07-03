@@ -1,0 +1,14 @@
+src/fyers_model.c
+  h_e5cd7b20a98a26 194
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "2989158e8906e5aa2fa8ad2377288c64d47d479c",
+  "prompts": {},
+  "humans": {
+    "h_e5cd7b20a98a26": {
+      "author": "kishore-fyers <kishorekumar@fyers.in>"
+    }
+  }
+}
