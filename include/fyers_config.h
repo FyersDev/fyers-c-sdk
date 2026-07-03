@@ -13,7 +13,6 @@ extern "C" {
 // API URLs
 #define FYERS_API_BASE_URL "https://api-t1.fyers.in/api/v3"
 #define FYERS_DATA_API_BASE_URL "https://api-t1.fyers.in/data"
-#define FYERS_SCREENERS_API_BASE_URL "https://screeners.fyers.in/koshi/cug/api/v3"
 
 // API Endpoints
 #define FYERS_ENDPOINT_PROFILE "/profile"
