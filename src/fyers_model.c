@@ -494,3 +494,63 @@ fyers_response_t* fyers_model_get_ledger_history(fyers_model_t* model, const cha
     free(query_str);
     return response;
 }
+
+fyers_response_t* fyers_model_get_history_expiry_dates(fyers_model_t* model, const char* params_json) {
+    char* query_str = json_to_query_string(params_json);
+    if (!query_str) {
+        return NULL;
+    }
+
+    fyers_response_t* response = make_get_request(model, FYERS_ENDPOINT_HISTORY_EXPIRY_DATES, query_str, true);
+    free(query_str);
+    return response;
+}
+
+fyers_response_t* fyers_model_get_history_underlying_symbols(fyers_model_t* model, const char* params_json) {
+    char* query_str = json_to_query_string(params_json);
+    if (!query_str) {
+        return NULL;
+    }
+
+    fyers_response_t* response = make_get_request(model, FYERS_ENDPOINT_HISTORY_UNDERLYING_SYMBOLS, query_str, true);
+    free(query_str);
+    return response;
+}
+
+fyers_response_t* fyers_model_get_history_fno_expired(fyers_model_t* model, const char* params_json) {
+    char* query_str = json_to_query_string(params_json);
+    if (!query_str) {
+        return NULL;
+    }
+
+    fyers_response_t* response = make_get_request(model, FYERS_ENDPOINT_HISTORY_FNO_EXPIRED, query_str, true);
+    free(query_str);
+    return response;
+}
+
+fyers_response_t* fyers_model_get_futures_chain(fyers_model_t* model, const char* symbol) {
+    if (!symbol) {
+        return NULL;
+    }
+
+    cJSON* json = cJSON_CreateObject();
+    if (!json) {
+        return NULL;
+    }
+    cJSON_AddStringToObject(json, "symbol", symbol);
+    char* params_json = cJSON_PrintUnformatted(json);
+    cJSON_Delete(json);
+    if (!params_json) {
+        return NULL;
+    }
+
+    char* query_str = json_to_query_string(params_json);
+    cJSON_free(params_json);
+    if (!query_str) {
+        return NULL;
+    }
+
+    fyers_response_t* response = make_get_request(model, FYERS_ENDPOINT_FUTURES_CHAIN, query_str, true);
+    free(query_str);
+    return response;
+}

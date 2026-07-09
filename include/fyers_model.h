@@ -51,6 +51,10 @@ FYERS_API fyers_response_t* fyers_model_get_charges_history(fyers_model_t* model
 FYERS_API fyers_response_t* fyers_model_get_realised_profit(fyers_model_t* model, const char* params_json);
 FYERS_API fyers_response_t* fyers_model_get_tax_pnl_history(fyers_model_t* model, const char* params_json);
 FYERS_API fyers_response_t* fyers_model_get_ledger_history(fyers_model_t* model, const char* params_json);
+FYERS_API fyers_response_t* fyers_model_get_history_expiry_dates(fyers_model_t* model, const char* params_json);
+FYERS_API fyers_response_t* fyers_model_get_history_underlying_symbols(fyers_model_t* model, const char* params_json);
+FYERS_API fyers_response_t* fyers_model_get_history_fno_expired(fyers_model_t* model, const char* params_json);
+FYERS_API fyers_response_t* fyers_model_get_futures_chain(fyers_model_t* model, const char* symbol);
 
 // Order placement
 FYERS_API fyers_response_t* fyers_model_place_order(fyers_model_t* model, const char* order_json);
