@@ -16,7 +16,7 @@ extern "C" {
  * @brief Create a new Fyers model instance
  * @param client_id Application client ID
  * @param access_token Access token (format: "client_id:token")
- * @param is_async Enable async mode (currently not implemented)
+ * @param is_async If true, place/modify use async routes; TP/SL requires false (sync)
  * @param log_path Path for log files (NULL for current directory)
  * @param log_level Log level
  * @return Model instance or NULL on error
