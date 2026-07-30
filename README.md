@@ -194,6 +194,7 @@ Try running the sample code from the [Fyers API documentation](https://myapi.fye
 * Cancel Order
 * Exit Position
 * Convert Position
+* Attach Position Legs
 
 #### Broker Config
 
@@ -213,6 +214,41 @@ Try running the sample code from the [Fyers API documentation](https://myapi.fye
 * Modify Price Alert
 * Delete Price Alert
 * Enable/Disable Price Alert
+
+## TP/SL Smart Orders (BO/CO migration)
+
+Product types `BO` and `CO` are **deprecated** and rejected by the API. Use standard products (`CNC`, `INTRADAY`, `MARGIN`, `MTF`) with offset-based TP/SL fields:
+
+| Field | Meaning |
+|-------|---------|
+| `takeProfit` | Profit target **offset** (not absolute price) |
+| `stopLoss` | Stop loss **offset** |
+| `legType` | `1` = points (default), `2` = percent of entry |
+
+TP/SL is supported only on sync endpoints (`/orders/sync`, `/multi-order/sync`). Create the model with `is_async = false`. Orderbook and position responses may include `takeProfit`, `stopLoss`, and `legType` when legs are active.
+
+```c
+/* Place order — TP/SL/legType omitted (not mandatory) */
+fyers_model_place_order(model, order_json);
+
+/* Optionally add any of takeProfit / stopLoss / legType */
+cJSON_AddNumberToObject(json, "takeProfit", 10.5);
+cJSON_AddNumberToObject(json, "stopLoss", 5.0);
+cJSON_AddNumberToObject(json, "legType", FYERS_LEG_TYPE_POINTS); /* optional; defaults to 1 */
+fyers_model_place_order(model, cJSON_Print(json));
+
+/* Modify: update TP, remove SL (JSON null) */
+cJSON_AddNumberToObject(mod, "takeProfit", 15.0);
+cJSON_AddNullToObject(mod, "stopLoss");
+fyers_model_modify_order(model, cJSON_PrintUnformatted(mod));
+
+/* Attach legs to an open position */
+cJSON_AddStringToObject(pos, "positionId", "NSE:SBIN-EQ-INTRADAY");
+cJSON_AddNumberToObject(pos, "takeProfit", 2.5);
+cJSON_AddNumberToObject(pos, "stopLoss", 1.5);
+cJSON_AddNumberToObject(pos, "legType", FYERS_LEG_TYPE_PERCENT);
+fyers_model_attach_position_legs(model, cJSON_PrintUnformatted(pos));
+```
 
 ## Web Socket
 
@@ -264,3 +300,4 @@ Examples are in `build/examples/` (REST API, WebSocket data, WebSocket orders).
 * Shared library with proper symbol export for Windows DLL
 * CMake package config for `find_package(fyers-api-c)`
 * Smart Orders and Smart Exits API support
+* TP/SL overlay on sync place/modify; `fyers_model_attach_position_legs`; BO/CO deprecated

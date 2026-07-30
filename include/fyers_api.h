@@ -17,6 +17,13 @@ extern "C" {
 #include <stdint.h>
 #include <stdbool.h>
 
+/* Deprecation attribute for BO/CO product type enumerators (GCC/Clang) */
+#if defined(__GNUC__) || defined(__clang__)
+#  define FYERS_DEPRECATED(msg) __attribute__((deprecated(msg)))
+#else
+#  define FYERS_DEPRECATED(msg)
+#endif
+
 // Forward declarations
 typedef struct fyers_session fyers_session_t;
 typedef struct fyers_model fyers_model_t;
@@ -30,7 +37,11 @@ typedef enum {
     FYERS_ERROR_NETWORK = -4,
     FYERS_ERROR_AUTH = -5,
     FYERS_ERROR_TOKEN_EXPIRED = -99,
-    FYERS_ERROR_INVALID_TOKEN = -300
+    FYERS_ERROR_INVALID_TOKEN = -300,
+    /** BO/CO product types are deprecated (API code -1800) */
+    FYERS_ERROR_BO_CO_DEPRECATED = -1800,
+    /** TP/SL parameters are only valid on synchronous order endpoints */
+    FYERS_ERROR_TPSL_ASYNC = -1801
 } fyers_error_t;
 
 // Log levels
@@ -56,14 +67,25 @@ typedef enum {
 } fyers_side_t;
 
 // Product types
+// Prefer CNC / INTRADAY / MARGIN / MTF with takeProfit/stopLoss offsets.
+// BO and CO are deprecated and rejected by the API (HTTP 400, code -1800).
 typedef enum {
     FYERS_PRODUCT_CNC,
     FYERS_PRODUCT_INTRADAY,
     FYERS_PRODUCT_MARGIN,
-    FYERS_PRODUCT_CO,
-    FYERS_PRODUCT_BO,
+    FYERS_PRODUCT_CO FYERS_DEPRECATED("CO is deprecated. Use CNC/INTRADAY/MARGIN/MTF with takeProfit/stopLoss offsets."),
+    FYERS_PRODUCT_BO FYERS_DEPRECATED("BO is deprecated. Use CNC/INTRADAY/MARGIN/MTF with takeProfit/stopLoss offsets."),
     FYERS_PRODUCT_MTF
 } fyers_product_type_t;
+
+/**
+ * @brief TP/SL offset measurement type (legType)
+ * Used with takeProfit / stopLoss on place, modify, and attach-position APIs.
+ */
+typedef enum {
+    FYERS_LEG_TYPE_POINTS = 1,   /**< Offset in price points (ticks) */
+    FYERS_LEG_TYPE_PERCENT = 2   /**< Offset as percentage of entry price */
+} fyers_leg_type_t;
 
 // Validity types
 typedef enum {
