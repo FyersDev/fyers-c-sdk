@@ -16,7 +16,7 @@ extern "C" {
  * @brief Create a new Fyers model instance
  * @param client_id Application client ID
  * @param access_token Access token (format: "client_id:token")
- * @param is_async If true, place/modify use async routes; TP/SL requires false (sync)
+ * @param is_async Enable async mode (currently not implemented)
  * @param log_path Path for log files (NULL for current directory)
  * @param log_level Log level
  * @return Model instance or NULL on error
@@ -69,10 +69,15 @@ FYERS_API fyers_response_t* fyers_model_cancel_order(fyers_model_t* model, const
 FYERS_API fyers_response_t* fyers_model_cancel_basket_orders(fyers_model_t* model, const char* order_ids_json);
 FYERS_API fyers_response_t* fyers_model_cancel_gtt_order(fyers_model_t* model, const char* order_id);
 
-// Position management
+// Position management — /positions
+//   GET    fyers_model_get_positions
+//   POST   fyers_model_convert_position
+//   DELETE fyers_model_exit_positions / fyers_model_exit_all_positions
+//   PATCH  fyers_model_attach_position_legs
 FYERS_API fyers_response_t* fyers_model_exit_positions(fyers_model_t* model, const char* position_id);
 FYERS_API fyers_response_t* fyers_model_exit_all_positions(fyers_model_t* model);
 FYERS_API fyers_response_t* fyers_model_convert_position(fyers_model_t* model, const char* position_json);
+FYERS_API fyers_response_t* fyers_model_attach_position_legs(fyers_model_t* model, const char* request_json);
 
 // Market data APIs
 FYERS_API fyers_response_t* fyers_model_get_history(fyers_model_t* model, const char* params_json);
