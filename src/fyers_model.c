@@ -219,213 +219,6 @@ static fyers_response_t* make_put_request(fyers_model_t* model,
     return fyers_http_client_put(model->http_client, url, model->header, data);
 }
 
-#define FYERS_TPSL_MIN_OFFSET 0.0025
-
-static fyers_response_t* make_client_error_response(int http_status,
-                                                     fyers_error_t error,
-                                                     int api_code,
-                                                     const char* message) {
-    fyers_response_t* response = (fyers_response_t*)malloc(sizeof(fyers_response_t));
-    if (!response) {
-        return NULL;
-    }
-
-    cJSON* root = cJSON_CreateObject();
-    if (!root) {
-        free(response);
-        return NULL;
-    }
-
-    cJSON_AddStringToObject(root, "s", "error");
-    cJSON_AddNumberToObject(root, "code", api_code);
-    cJSON_AddStringToObject(root, "message", message ? message : "error");
-
-    char* payload = cJSON_PrintUnformatted(root);
-    cJSON_Delete(root);
-    if (!payload) {
-        free(response);
-        return NULL;
-    }
-
-    response->data = payload;
-    response->size = strlen(payload);
-    response->status_code = http_status;
-    response->error = error;
-    return response;
-}
-
-/** Returns true if takeProfit or stopLoss is present with a positive value. */
-static bool order_json_has_active_tpsl(const cJSON* order) {
-    if (!order || !cJSON_IsObject(order)) {
-        return false;
-    }
-
-    const cJSON* tp = cJSON_GetObjectItemCaseSensitive(order, "takeProfit");
-    if (cJSON_IsNumber(tp) && tp->valuedouble > 0.0) {
-        return true;
-    }
-
-    const cJSON* sl = cJSON_GetObjectItemCaseSensitive(order, "stopLoss");
-    if (cJSON_IsNumber(sl) && sl->valuedouble > 0.0) {
-        return true;
-    }
-
-    return false;
-}
-
-static bool product_type_is_deprecated(const cJSON* order) {
-    if (!order || !cJSON_IsObject(order)) {
-        return false;
-    }
-    const cJSON* product = cJSON_GetObjectItemCaseSensitive(order, "productType");
-    if (!cJSON_IsString(product) || !product->valuestring) {
-        return false;
-    }
-    return (strcmp(product->valuestring, "BO") == 0 ||
-            strcmp(product->valuestring, "CO") == 0);
-}
-
-/**
- * Validate TP/SL fields on a single order object.
- * Returns NULL if OK, otherwise an error response (caller must not free order).
- * allow_null_clear: if true, null/0 are allowed (modify/attach remove semantics).
- */
-static fyers_response_t* validate_tpsl_fields(const cJSON* order, bool allow_null_clear) {
-    (void)allow_null_clear; /* null/0 clear semantics are accepted for modify/attach */
-    if (!order || !cJSON_IsObject(order)) {
-        return NULL;
-    }
-
-    const cJSON* tp = cJSON_GetObjectItemCaseSensitive(order, "takeProfit");
-    const cJSON* sl = cJSON_GetObjectItemCaseSensitive(order, "stopLoss");
-    const cJSON* leg = cJSON_GetObjectItemCaseSensitive(order, "legType");
-
-    bool has_tp = (tp != NULL && !cJSON_IsNull(tp));
-    bool has_sl = (sl != NULL && !cJSON_IsNull(sl));
-
-    if (has_tp) {
-        if (!cJSON_IsNumber(tp)) {
-            return make_client_error_response(400, FYERS_ERROR_INVALID_PARAM, -2,
-                "takeProfit must be a number or null");
-        }
-        if (tp->valuedouble < 0.0) {
-            return make_client_error_response(400, FYERS_ERROR_INVALID_PARAM, -2,
-                "takeProfit and stopLoss offsets must be positive numbers");
-        }
-        if (tp->valuedouble > 0.0 && tp->valuedouble < FYERS_TPSL_MIN_OFFSET) {
-            return make_client_error_response(400, FYERS_ERROR_INVALID_PARAM, -2,
-                "takeProfit/stopLoss offset must be greater than or equal to 0.0025");
-        }
-    }
-
-    if (has_sl) {
-        if (!cJSON_IsNumber(sl)) {
-            return make_client_error_response(400, FYERS_ERROR_INVALID_PARAM, -2,
-                "stopLoss must be a number or null");
-        }
-        if (sl->valuedouble < 0.0) {
-            return make_client_error_response(400, FYERS_ERROR_INVALID_PARAM, -2,
-                "takeProfit and stopLoss offsets must be positive numbers");
-        }
-        if (sl->valuedouble > 0.0 && sl->valuedouble < FYERS_TPSL_MIN_OFFSET) {
-            return make_client_error_response(400, FYERS_ERROR_INVALID_PARAM, -2,
-                "takeProfit/stopLoss offset must be greater than or equal to 0.0025");
-        }
-    }
-
-    int leg_type = FYERS_LEG_TYPE_POINTS;
-    bool has_active_tpsl =
-        (has_tp && cJSON_IsNumber(tp) && tp->valuedouble > 0.0) ||
-        (has_sl && cJSON_IsNumber(sl) && sl->valuedouble > 0.0);
-
-    /* legType is not mandatory; validate only when the caller sends it */
-    if (leg != NULL && !cJSON_IsNull(leg)) {
-        if (!cJSON_IsNumber(leg)) {
-            return make_client_error_response(400, FYERS_ERROR_INVALID_PARAM, -2,
-                "legType must be 1 (points) or 2 (percent)");
-        }
-        leg_type = leg->valueint;
-        if (leg_type != FYERS_LEG_TYPE_POINTS && leg_type != FYERS_LEG_TYPE_PERCENT) {
-            return make_client_error_response(400, FYERS_ERROR_INVALID_PARAM, -2,
-                "legType must be 1 (points) or 2 (percent)");
-        }
-    }
-
-    if (has_active_tpsl && leg_type == FYERS_LEG_TYPE_PERCENT) {
-        if (has_tp && tp->valuedouble > 0.0 && tp->valuedouble > 100.0) {
-            return make_client_error_response(400, FYERS_ERROR_INVALID_PARAM, -2,
-                "takeProfit/stopLoss percentage must be between 0.0025 and 100");
-        }
-        if (has_sl && sl->valuedouble > 0.0 && sl->valuedouble > 100.0) {
-            return make_client_error_response(400, FYERS_ERROR_INVALID_PARAM, -2,
-                "takeProfit/stopLoss percentage must be between 0.0025 and 100");
-        }
-    }
-
-    return NULL;
-}
-
-/**
- * Pre-flight checks for place/modify order JSON (object or array).
- * Returns an error response on failure, or NULL if the request may proceed.
- */
-static fyers_response_t* validate_order_request(fyers_model_t* model,
-                                                 const char* order_json,
-                                                 bool is_modify) {
-    if (!order_json) {
-        return make_client_error_response(400, FYERS_ERROR_INVALID_PARAM, -2,
-            "order JSON is required");
-    }
-
-    cJSON* root = cJSON_Parse(order_json);
-    if (!root) {
-        return make_client_error_response(400, FYERS_ERROR_INVALID_PARAM, -2,
-            "invalid order JSON");
-    }
-
-    fyers_response_t* err = NULL;
-    cJSON* items[FYERS_MAX_SYMBOLS_BASKET];
-    int count = 0;
-
-    if (cJSON_IsArray(root)) {
-        cJSON* child = NULL;
-        cJSON_ArrayForEach(child, root) {
-            if (count >= FYERS_MAX_SYMBOLS_BASKET) {
-                break;
-            }
-            items[count++] = child;
-        }
-    } else if (cJSON_IsObject(root)) {
-        items[count++] = root;
-    } else {
-        cJSON_Delete(root);
-        return make_client_error_response(400, FYERS_ERROR_INVALID_PARAM, -2,
-            "order JSON must be an object or array");
-    }
-
-    for (int i = 0; i < count; i++) {
-        if (product_type_is_deprecated(items[i])) {
-            err = make_client_error_response(400, FYERS_ERROR_BO_CO_DEPRECATED, -1800,
-                "BO/CO product types are deprecated. Use standard product types with takeProfit/stopLoss offsets instead.");
-            break;
-        }
-
-        err = validate_tpsl_fields(items[i], is_modify);
-        if (err) {
-            break;
-        }
-
-        if (model->is_async && order_json_has_active_tpsl(items[i])) {
-            err = make_client_error_response(400, FYERS_ERROR_TPSL_ASYNC, -1801,
-                "takeProfit/stopLoss are only supported on synchronous order endpoints (is_async must be false)");
-            break;
-        }
-    }
-
-    cJSON_Delete(root);
-    return err;
-}
-
 // User APIs
 fyers_response_t* fyers_model_get_profile(fyers_model_t* model) {
     return make_get_request(model, FYERS_ENDPOINT_PROFILE, NULL, false);
@@ -468,26 +261,14 @@ fyers_response_t* fyers_model_get_market_status(fyers_model_t* model) {
 
 // Order placement
 fyers_response_t* fyers_model_place_order(fyers_model_t* model, const char* order_json) {
-    fyers_response_t* err = validate_order_request(model, order_json, false);
-    if (err) {
-        return err;
-    }
     return make_post_request(model, FYERS_ENDPOINT_ORDERS, order_json);
 }
 
 fyers_response_t* fyers_model_place_multi_order(fyers_model_t* model, const char* order_json) {
-    fyers_response_t* err = validate_order_request(model, order_json, false);
-    if (err) {
-        return err;
-    }
     return make_post_request(model, FYERS_ENDPOINT_MULTI_ORDERS, order_json);
 }
 
 fyers_response_t* fyers_model_place_basket_orders(fyers_model_t* model, const char* orders_json) {
-    fyers_response_t* err = validate_order_request(model, orders_json, false);
-    if (err) {
-        return err;
-    }
     return make_post_request(model, FYERS_ENDPOINT_MULTI_ORDERS, orders_json);
 }
 
@@ -501,18 +282,10 @@ fyers_response_t* fyers_model_place_gtt_order(fyers_model_t* model, const char* 
 
 // Order modification
 fyers_response_t* fyers_model_modify_order(fyers_model_t* model, const char* order_json) {
-    fyers_response_t* err = validate_order_request(model, order_json, true);
-    if (err) {
-        return err;
-    }
     return make_patch_request(model, FYERS_ENDPOINT_ORDERS, order_json);
 }
 
 fyers_response_t* fyers_model_modify_basket_orders(fyers_model_t* model, const char* orders_json) {
-    fyers_response_t* err = validate_order_request(model, orders_json, true);
-    if (err) {
-        return err;
-    }
     return make_patch_request(model, FYERS_ENDPOINT_MULTI_ORDERS, orders_json);
 }
 
@@ -550,34 +323,6 @@ fyers_response_t* fyers_model_convert_position(fyers_model_t* model, const char*
 }
 
 fyers_response_t* fyers_model_attach_position_legs(fyers_model_t* model, const char* request_json) {
-    if (!request_json) {
-        return make_client_error_response(400, FYERS_ERROR_INVALID_PARAM, -2,
-            "request JSON is required");
-    }
-
-    cJSON* root = cJSON_Parse(request_json);
-    if (!root || !cJSON_IsObject(root)) {
-        if (root) {
-            cJSON_Delete(root);
-        }
-        return make_client_error_response(400, FYERS_ERROR_INVALID_PARAM, -2,
-            "attach position legs JSON must be an object");
-    }
-
-    const cJSON* position_id = cJSON_GetObjectItemCaseSensitive(root, "positionId");
-    if (!cJSON_IsString(position_id) || !position_id->valuestring ||
-        position_id->valuestring[0] == '\0') {
-        cJSON_Delete(root);
-        return make_client_error_response(400, FYERS_ERROR_INVALID_PARAM, -2,
-            "positionId is required");
-    }
-
-    fyers_response_t* err = validate_tpsl_fields(root, true);
-    cJSON_Delete(root);
-    if (err) {
-        return err;
-    }
-
     return make_patch_request(model, FYERS_ENDPOINT_POSITIONS, request_json);
 }
 

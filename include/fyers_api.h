@@ -37,11 +37,7 @@ typedef enum {
     FYERS_ERROR_NETWORK = -4,
     FYERS_ERROR_AUTH = -5,
     FYERS_ERROR_TOKEN_EXPIRED = -99,
-    FYERS_ERROR_INVALID_TOKEN = -300,
-    /** BO/CO product types are deprecated (API code -1800) */
-    FYERS_ERROR_BO_CO_DEPRECATED = -1800,
-    /** TP/SL parameters are only valid on synchronous order endpoints */
-    FYERS_ERROR_TPSL_ASYNC = -1801
+    FYERS_ERROR_INVALID_TOKEN = -300
 } fyers_error_t;
 
 // Log levels
