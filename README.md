@@ -300,4 +300,4 @@ Examples are in `build/examples/` (REST API, WebSocket data, WebSocket orders).
 * Shared library with proper symbol export for Windows DLL
 * CMake package config for `find_package(fyers-api-c)`
 * Smart Orders and Smart Exits API support
-* TP/SL overlay on sync place/modify; `fyers_model_attach_position_legs`; BO/CO deprecated
+* TP/SL overlay on sync place/modify; `fyers_model_attach_position_legs`
