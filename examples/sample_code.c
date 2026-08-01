@@ -1907,12 +1907,11 @@ void fy_get_ledger_history(fyers_session_t* session) {
 
 int main() {
     // Replace with your app credentials
-    // const char* client_id = "M0R4WW1PYU-100";
-    const char* client_id = "BQ6KVNTLF1-200";
+    const char* client_id = "";
     const char* redirect_uri = "https://trade.fyers.in/api-login/redirect-uri/index.html";
     const char* secret_key = "";
-    const char* auth_code = "BQ6KVNTLF1-200";
-    const char* access_token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOlsiZDoxIiwiZDoyIiwieDowIiwieDoxIiwieDoyIl0sImF0X2hhc2giOiJnQUFBQUFCcWJDeFd3MFlselBLeEJMQzNlUk9NMHRlLXBoS1V1WjQyRWg5NDBGMGJDbjBQajZDanJwOGtoanJiZnJBSmtZbVN0U2xoUkxod0UyekZtb3RtZ2drT0U3OWp3VHU5TGVMTWlXNDNuNmZuU0l1ZGZLOD0iLCJkaXNwbGF5X25hbWUiOiIiLCJvbXMiOiJLMSIsImhzbV9rZXkiOiI5ZTAyMTQxNjMwYmZmZjRjZDk0NzMyMDkzZWQwNTUwYzY2NGIxNDI5NzE3YzMzZTJhZmI4MDVmOSIsImlzRGRwaUVuYWJsZWQiOiJOIiwiaXNNdGZFbmFibGVkIjoiTiIsImZ5X2lkIjoiWFIyNDc2MSIsImFwcFR5cGUiOjIwMCwiZXhwIjoxNzg1NTQ0MjAwLCJpYXQiOjE3ODU0NzQxMzQsImlzcyI6ImFwaS5meWVycy5jby5pbiIsIm5iZiI6MTc4NTQ3NDEzNCwic3ViIjoiYWNjZXNzX3Rva2VuIn0.8jDhWrJMNDYy7swiDKTwdJEvdN4q0M_JNU_8If82dC4";
+    const char* auth_code = "";
+    const char* access_token = "";
 
 
     // Create session
