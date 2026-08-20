@@ -4,11 +4,13 @@
  */
 
  #include "fyers_data_ws.h"
+ #include "fyers_api.h"
  #include "fyers_logger.h"
  #include "fyers_http_client.h"
  #include "fyers_config.h"
  #include "fyers_model.h"
  #include <libwebsockets.h>
+ #include <curl/curl.h>
  #include <stdlib.h>
  #include <string.h>
  #include <stdio.h>
@@ -25,6 +27,7 @@
  // Constants
  #define DATA_WS_URL "wss://socket.fyers.in/hsm/v1-5/prod"
  #define SYMBOL_TOKEN_API "https://api-t1.fyers.in/data/symbol-token"
+ #define INDEX_HSM_MAPPING_URL "https://public.fyers.in/sym_details/index_hsm_mapping.json"
  #define SOURCE_STRING "CSDK-3.1.8"
  #define SYMBOL_LIMIT 5000
  #define MAX_RECONNECT_ATTEMPTS 50
@@ -581,13 +584,7 @@
      const char* code;  // e.g., "1010"
      const char* segment;  // e.g., "nse_cm"
  } exch_seg_entry_t;
- 
- // Index mapping structure (from map.json index_dict)
- typedef struct {
-     const char* symbol;  // e.g., "NSE:NIFTY50-INDEX"
-     const char* token;   // e.g., "Nifty 50"
- } index_entry_t;
- 
+
  // Initialize exchange segment dictionary (from map.json exch_seg_dict)
  static const char* get_exchange_segment(const char* ex_sg) {
      // Map from map.json exch_seg_dict
@@ -611,143 +608,236 @@
      return NULL;
  }
  
- // Initialize index dictionary (from map.json index_dict)
+ // Index mapping (public API cache + hardcoded fallback from map.json index_dict)
+ typedef struct {
+     const char* symbol;  // e.g., "NSE:NIFTY50-INDEX"
+     const char* token;   // e.g., "Nifty 50"
+ } index_entry_t;
+
+ static cJSON* g_index_dict_json = NULL;
+ static bool g_index_dict_loaded = false;
+ static pthread_mutex_t g_index_dict_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+ // Hardcoded fallback (used only if public API fetch fails)
+ static const index_entry_t k_fallback_index_dict[] = {
+     {"NSE:NIFTYINDIAMFG-INDEX", "NIFTY INDIA MFG"},
+     {"NSE:NIFTY100ESG-INDEX", "NIFTY100 ESG"},
+     {"NSE:NIFTYINDDIGITAL-INDEX", "NIFTY IND DIGITAL"},
+     {"NSE:NIFTYMICROCAP250-INDEX", "NIFTY MICROCAP250"},
+     {"NSE:NIFTYCONSRDURBL-INDEX", "NIFTY CONSR DURBL"},
+     {"NSE:NIFTYHEALTHCARE-INDEX", "NIFTY HEALTHCARE"},
+     {"NSE:NIFTYOILANDGAS-INDEX", "NIFTY OIL AND GAS"},
+     {"NSE:NIFTY100ESGSECLDR-INDEX", "Nifty100ESGSecLdr"},
+     {"NSE:NIFTY200MOMENTM30-INDEX", "Nifty200Momentm30"},
+     {"NSE:NIFTYALPHALOWVOL-INDEX", "NIFTY AlphaLowVol"},
+     {"NSE:NIFTY200QUALTY30-INDEX", "NIFTY200 QUALTY30"},
+     {"NSE:NIFTYSMLCAP50-INDEX", "NIFTY SMLCAP 50"},
+     {"NSE:MIDCPNIFTY-INDEX", "NIFTY MID SELECT"},
+     {"NSE:NIFTYMIDSELECT-INDEX", "NIFTY MID SELECT"},
+     {"NSE:NIFTYMIDCAP150-INDEX", "NIFTY MIDCAP 150"},
+     {"NSE:NIFTY100 EQL WGT-INDEX", "NIFTY100 EQL Wgt"},
+     {"NSE:NIFTY50 EQL WGT-INDEX", "NIFTY50 EQL Wgt"},
+     {"NSE:NIFTYGSCOMPSITE-INDEX", "Nifty GS Compsite"},
+     {"NSE:NIFTYGS1115YR-INDEX", "Nifty GS 11 15Yr"},
+     {"NSE:NIFTYGS48YR-INDEX", "Nifty GS 4 8Yr"},
+     {"NSE:NIFTYGS10YRCLN-INDEX", "Nifty GS 10Yr Cln"},
+     {"NSE:NIFTYGS813YR-INDEX", "Nifty GS 8 13Yr"},
+     {"NSE:NIFTYSMLCAP100-INDEX", "NIFTY SMLCAP 100"},
+     {"NSE:NIFTYQUALITY30-INDEX", "NIFTY100 Qualty30"},
+     {"NSE:NIFTYPVTBANK-INDEX", "Nifty Pvt Bank"},
+     {"NSE:NIFTYPHARMA-INDEX", "Nifty Pharma"},
+     {"NSE:NIFTYLARGEMID250-INDEX", "NIFTY LARGEMID250"},
+     {"NSE:NIFTYGS15YRPLUS-INDEX", "Nifty GS 15YrPlus"},
+     {"NSE:NIFTYPSUBANK-INDEX", "Nifty PSU Bank"},
+     {"NSE:NIFTYSMLCAP250-INDEX", "NIFTY SMLCAP 250"},
+     {"NSE:NIFTYENERGY-INDEX", "Nifty Energy"},
+     {"NSE:NIFTYALPHA50-INDEX", "NIFTY Alpha 50"},
+     {"NSE:NIFTYPSE-INDEX", "Nifty PSE"},
+     {"NSE:NIFTYFINSRV2550-INDEX", "Nifty FinSrv25 50"},
+     {"NSE:FINNIFTY-INDEX", "Nifty Fin Service"},
+     {"NSE:NIFTYREALTY-INDEX", "Nifty Realty"},
+     {"NSE:NIFTY500-INDEX", "Nifty 500"},
+     {"NSE:NIFTY500MULTICAP-INDEX", "NIFTY500 MULTICAP"},
+     {"NSE:NIFTYMIDCAP50-INDEX", "Nifty Midcap 50"},
+     {"NSE:NIFTYTOTALMKT-INDEX", "NIFTY TOTAL MKT"},
+     {"NSE:NIFTY50PR2XLEV-INDEX", "Nifty50 PR 2x Lev"},
+     {"NSE:INDIAVIX-INDEX", "India VIX"},
+     {"NSE:NIFTYDIVOPPS50-INDEX", "Nifty Div Opps 50"},
+     {"NSE:NIFTYMNC-INDEX", "Nifty MNC"},
+     {"NSE:NIFTY50VALUE20-INDEX", "Nifty50 Value 20"},
+     {"NSE:NIFTY50-INDEX", "Nifty 50"},
+     {"NSE:HANGSENG BEES-NAV-INDEX", "HangSeng BeES-NAV"},
+     {"NSE:NIFTY100LIQ15-INDEX", "Nifty100 Liq 15"},
+     {"NSE:NIFTY50TR2XLEV-INDEX", "Nifty50 TR 2x Lev"},
+     {"NSE:NIFTY100-INDEX", "Nifty 100"},
+     {"NSE:NIFTY100 LOWVOL30-INDEX", "NIFTY100 LowVol30"},
+     {"NSE:NIFTYBANK-INDEX", "Nifty Bank"},
+     {"NSE:NIFTYFMCG-INDEX", "Nifty FMCG"},
+     {"NSE:NIFTYIT-INDEX", "Nifty IT"},
+     {"NSE:NIFTYGS10YR-INDEX", "Nifty GS 10Yr"},
+     {"NSE:NIFTYMIDCAP100-INDEX", "NIFTY MIDCAP 100"},
+     {"NSE:NIFTYNEXT50-INDEX", "Nifty Next 50"},
+     {"NSE:NIFTYNXT50-INDEX", "Nifty Next 50"},
+     {"NSE:NIFTYM150QLTY50-INDEX", "NIFTY M150 QLTY50"},
+     {"NSE:NIFTYSERVSECTOR-INDEX", "Nifty Serv Sector"},
+     {"NSE:NIFTYMIDSML400-INDEX", "NIFTY MIDSML 400"},
+     {"NSE:NIFTYAUTO-INDEX", "Nifty Auto"},
+     {"NSE:NIFTYMETAL-INDEX", "Nifty Metal"},
+     {"NSE:NIFTYINFRA-INDEX", "Nifty Infra"},
+     {"NSE:NIFTYMEDIA-INDEX", "Nifty Media"},
+     {"NSE:NIFTY50PR1XINV-INDEX", "Nifty50 PR 1x Inv"},
+     {"NSE:NIFTY200-INDEX", "Nifty 200"},
+     {"NSE:NIFTY50TR1XINV-INDEX", "Nifty50 TR 1x Inv"},
+     {"NSE:NIFTYCPSE-INDEX", "Nifty CPSE"},
+     {"NSE:NIFTYMIDLIQ15-INDEX", "Nifty Mid Liq 15"},
+     {"NSE:NIFTYCOMMODITIES-INDEX", "Nifty Commodities"},
+     {"NSE:NIFTYCONSUMPTION-INDEX", "Nifty Consumption"},
+     {"NSE:NIFTY50DIVPOINT-INDEX", "Nifty50 Div Point"},
+     {"NSE:NIFTYGROWSECT15-INDEX", "Nifty GrowSect 15"},
+     {"BSE:100LARGECAPTMC-INDEX", "LCTMCI"},
+     {"BSE:DFRG-INDEX", "DFRGRI"},
+     {"BSE:QUALITY-INDEX", "BSEQUI"},
+     {"BSE:DIVIDENDSTABILITY-INDEX", "BSEDSI"},
+     {"BSE:250SMALLCAP-INDEX", "SML250"},
+     {"BSE:150MIDCAP-INDEX", "MID150"},
+     {"BSE:ESG100-INDEX", "ESG100"},
+     {"BSE:SNXT50-INDEX", "SNXT50"},
+     {"BSE:SNSX50-INDEX", "SNSX50"},
+     {"BSE:UTILS-INDEX", "UTILS"},
+     {"BSE:GREENEX-INDEX", "GREENX"},
+     {"BSE:SENSEX-INDEX", "SENSEX"},
+     {"BSE:REALTY-INDEX", "REALTY"},
+     {"BSE:PRIVATEBANKS-INDEX", "BSEPBI"},
+     {"BSE:CDGS-INDEX", "CDGS"},
+     {"BSE:OILGAS-INDEX", "OILGAS"},
+     {"BSE:ENERGY-INDEX", "ENERGY"},
+     {"BSE:POWER-INDEX", "POWER"},
+     {"BSE:500-INDEX", "BSE500"},
+     {"BSE:100-INDEX", "BSE100"},
+     {"BSE:PSU-INDEX", "BSEPSU"},
+     {"BSE:HC-INDEX", "BSE HC"},
+     {"BSE:400MIDSMALLCAP-INDEX", "MSL400"},
+     {"BSE:BHRT22-INDEX", "BHRT22"},
+     {"BSE:BANKEX-INDEX", "BANKEX"},
+     {"BSE:ALLCAP-INDEX", "ALLCAP"},
+     {"BSE:INFRA-INDEX", "INFRA"},
+     {"BSE:CD-INDEX", "BSE CD"},
+     {"BSE:MIDCAP-INDEX", "MIDCAP"},
+     {"BSE:AUTO-INDEX", "AUTO"},
+     {"BSE:BASMTR-INDEX", "BASMTR"},
+     {"BSE:200-INDEX", "BSE200"},
+     {"BSE:FIN-INDEX", "FIN"},
+     {"BSE:CG-INDEX", "BSE CG"},
+     {"BSE:ENHANCEDVALUE-INDEX", "BSEEVI"},
+     {"BSE:TECK-INDEX", "TECK"},
+     {"BSE:METAL-INDEX", "METAL"},
+     {"BSE:CARBONEX-INDEX", "CARBON"},
+     {"BSE:MIDSEL-INDEX", "MIDSEL"},
+     {"BSE:SME IPO-INDEX", "SMEIPO"},
+     {"BSE:MOMENTUM-INDEX", "BSEMOI"},
+     {"BSE:TELCOM-INDEX", "TELCOM"},
+     {"BSE:CPSE-INDEX", "CPSE"},
+     {"BSE:250LARGEMIDCAP-INDEX", "LMI250"},
+     {"BSE:SMLCAP-INDEX", "SMLCAP"},
+     {"BSE:IT-INDEX", "BSE IT"},
+     {"BSE:INDIAMANUFACTURING-INDEX", "MFG"},
+     {"BSE:INDSTR-INDEX", "INDSTR"},
+     {"BSE:LOWVOLATILITY-INDEX", "BSELVI"},
+     {"BSE:LRGCAP-INDEX", "LRGCAP"},
+     {"BSE:IPO-INDEX", "BSEIPO"},
+     {"BSE:FMC-INDEX", "BSEFMC"},
+     {"BSE:SMLSEL-INDEX", "SMLSEL"},
+     {NULL, NULL}
+ };
+
+ struct index_curl_buf {
+     char* data;
+     size_t len;
+ };
+
+ static size_t index_curl_write(void* ptr, size_t size, size_t nmemb, void* userdata) {
+     size_t n = size * nmemb;
+     struct index_curl_buf* buf = (struct index_curl_buf*)userdata;
+     char* next = realloc(buf->data, buf->len + n + 1);
+     if (!next) {
+         return 0;
+     }
+     buf->data = next;
+     memcpy(buf->data + buf->len, ptr, n);
+     buf->len += n;
+     buf->data[buf->len] = '\0';
+     return n;
+ }
+
+ static bool load_index_dict_from_api(void) {
+     fyers_ensure_init();
+
+     CURL* curl = curl_easy_init();
+     if (!curl) {
+         return false;
+     }
+
+     struct index_curl_buf buf = {0};
+     curl_easy_setopt(curl, CURLOPT_URL, INDEX_HSM_MAPPING_URL);
+     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, index_curl_write);
+     curl_easy_setopt(curl, CURLOPT_WRITEDATA, &buf);
+     curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
+     curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
+     curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+     curl_easy_setopt(curl, CURLOPT_TIMEOUT, 15L);
+
+     CURLcode rc = curl_easy_perform(curl);
+     long http_code = 0;
+     curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);
+     curl_easy_cleanup(curl);
+
+     if (rc != CURLE_OK || http_code < 200 || http_code >= 300 || !buf.data) {
+         free(buf.data);
+         return false;
+     }
+
+     cJSON* root = cJSON_Parse(buf.data);
+     free(buf.data);
+     if (!root || !cJSON_IsObject(root)) {
+         cJSON_Delete(root);
+         return false;
+     }
+
+     g_index_dict_json = root;
+     return true;
+ }
+
+ static void ensure_index_dict_loaded(void) {
+     if (g_index_dict_loaded) {
+         return;
+     }
+     pthread_mutex_lock(&g_index_dict_mutex);
+     if (!g_index_dict_loaded) {
+         load_index_dict_from_api();
+         g_index_dict_loaded = true;
+     }
+     pthread_mutex_unlock(&g_index_dict_mutex);
+ }
+
  static const char* get_index_token(const char* symbol) {
-     // Map from map.json index_dict (subset - full list has ~100 entries)
-     static const index_entry_t index_dict[] = {
-         {"NSE:NIFTYINDIAMFG-INDEX", "NIFTY INDIA MFG"},
-         {"NSE:NIFTY100ESG-INDEX", "NIFTY100 ESG"},
-         {"NSE:NIFTYINDDIGITAL-INDEX", "NIFTY IND DIGITAL"},
-         {"NSE:NIFTYMICROCAP250-INDEX", "NIFTY MICROCAP250"},
-         {"NSE:NIFTYCONSRDURBL-INDEX", "NIFTY CONSR DURBL"},
-         {"NSE:NIFTYHEALTHCARE-INDEX", "NIFTY HEALTHCARE"},
-         {"NSE:NIFTYOILANDGAS-INDEX", "NIFTY OIL AND GAS"},
-         {"NSE:NIFTY100ESGSECLDR-INDEX", "Nifty100ESGSecLdr"},
-         {"NSE:NIFTY200MOMENTM30-INDEX", "Nifty200Momentm30"},
-         {"NSE:NIFTYALPHALOWVOL-INDEX", "NIFTY AlphaLowVol"},
-         {"NSE:NIFTY200QUALTY30-INDEX", "NIFTY200 QUALTY30"},
-         {"NSE:NIFTYSMLCAP50-INDEX", "NIFTY SMLCAP 50"},
-         {"NSE:MIDCPNIFTY-INDEX", "NIFTY MID SELECT"},
-         {"NSE:NIFTYMIDSELECT-INDEX", "NIFTY MID SELECT"},
-         {"NSE:NIFTYMIDCAP150-INDEX", "NIFTY MIDCAP 150"},
-         {"NSE:NIFTY100 EQL WGT-INDEX", "NIFTY100 EQL Wgt"},
-         {"NSE:NIFTY50 EQL WGT-INDEX", "NIFTY50 EQL Wgt"},
-         {"NSE:NIFTYGSCOMPSITE-INDEX", "Nifty GS Compsite"},
-         {"NSE:NIFTYGS1115YR-INDEX", "Nifty GS 11 15Yr"},
-         {"NSE:NIFTYGS48YR-INDEX", "Nifty GS 4 8Yr"},
-         {"NSE:NIFTYGS10YRCLN-INDEX", "Nifty GS 10Yr Cln"},
-         {"NSE:NIFTYGS813YR-INDEX", "Nifty GS 8 13Yr"},
-         {"NSE:NIFTYSMLCAP100-INDEX", "NIFTY SMLCAP 100"},
-         {"NSE:NIFTYQUALITY30-INDEX", "NIFTY100 Qualty30"},
-         {"NSE:NIFTYPVTBANK-INDEX", "Nifty Pvt Bank"},
-         {"NSE:NIFTYPHARMA-INDEX", "Nifty Pharma"},
-         {"NSE:NIFTYLARGEMID250-INDEX", "NIFTY LARGEMID250"},
-         {"NSE:NIFTYGS15YRPLUS-INDEX", "Nifty GS 15YrPlus"},
-         {"NSE:NIFTYPSUBANK-INDEX", "Nifty PSU Bank"},
-         {"NSE:NIFTYSMLCAP250-INDEX", "NIFTY SMLCAP 250"},
-         {"NSE:NIFTYENERGY-INDEX", "Nifty Energy"},
-         {"NSE:NIFTYALPHA50-INDEX", "NIFTY Alpha 50"},
-         {"NSE:NIFTYPSE-INDEX", "Nifty PSE"},
-         {"NSE:NIFTYFINSRV2550-INDEX", "Nifty FinSrv25 50"},
-         {"NSE:FINNIFTY-INDEX", "Nifty Fin Service"},
-         {"NSE:NIFTYREALTY-INDEX", "Nifty Realty"},
-         {"NSE:NIFTY500-INDEX", "Nifty 500"},
-         {"NSE:NIFTY500MULTICAP-INDEX", "NIFTY500 MULTICAP"},
-         {"NSE:NIFTYMIDCAP50-INDEX", "Nifty Midcap 50"},
-         {"NSE:NIFTYTOTALMKT-INDEX", "NIFTY TOTAL MKT"},
-         {"NSE:NIFTY50PR2XLEV-INDEX", "Nifty50 PR 2x Lev"},
-         {"NSE:INDIAVIX-INDEX", "India VIX"},
-         {"NSE:NIFTYDIVOPPS50-INDEX", "Nifty Div Opps 50"},
-         {"NSE:NIFTYMNC-INDEX", "Nifty MNC"},
-         {"NSE:NIFTY50VALUE20-INDEX", "Nifty50 Value 20"},
-         {"NSE:NIFTY50-INDEX", "Nifty 50"},
-         {"NSE:HANGSENG BEES-NAV-INDEX", "HangSeng BeES-NAV"},
-         {"NSE:NIFTY100LIQ15-INDEX", "Nifty100 Liq 15"},
-         {"NSE:NIFTY50TR2XLEV-INDEX", "Nifty50 TR 2x Lev"},
-         {"NSE:NIFTY100-INDEX", "Nifty 100"},
-         {"NSE:NIFTY100 LOWVOL30-INDEX", "NIFTY100 LowVol30"},
-         {"NSE:NIFTYBANK-INDEX", "Nifty Bank"},
-         {"NSE:NIFTYFMCG-INDEX", "Nifty FMCG"},
-         {"NSE:NIFTYIT-INDEX", "Nifty IT"},
-         {"NSE:NIFTYGS10YR-INDEX", "Nifty GS 10Yr"},
-         {"NSE:NIFTYMIDCAP100-INDEX", "NIFTY MIDCAP 100"},
-         {"NSE:NIFTYNEXT50-INDEX", "Nifty Next 50"},
-         {"NSE:NIFTYNXT50-INDEX", "Nifty Next 50"},
-         {"NSE:NIFTYM150QLTY50-INDEX", "NIFTY M150 QLTY50"},
-         {"NSE:NIFTYSERVSECTOR-INDEX", "Nifty Serv Sector"},
-         {"NSE:NIFTYMIDSML400-INDEX", "NIFTY MIDSML 400"},
-         {"NSE:NIFTYAUTO-INDEX", "Nifty Auto"},
-         {"NSE:NIFTYMETAL-INDEX", "Nifty Metal"},
-         {"NSE:NIFTYINFRA-INDEX", "Nifty Infra"},
-         {"NSE:NIFTYMEDIA-INDEX", "Nifty Media"},
-         {"NSE:NIFTY50PR1XINV-INDEX", "Nifty50 PR 1x Inv"},
-         {"NSE:NIFTY200-INDEX", "Nifty 200"},
-         {"NSE:NIFTY50TR1XINV-INDEX", "Nifty50 TR 1x Inv"},
-         {"NSE:NIFTYCPSE-INDEX", "Nifty CPSE"},
-         {"NSE:NIFTYMIDLIQ15-INDEX", "Nifty Mid Liq 15"},
-         {"NSE:NIFTYCOMMODITIES-INDEX", "Nifty Commodities"},
-         {"NSE:NIFTYCONSUMPTION-INDEX", "Nifty Consumption"},
-         {"NSE:NIFTY50DIVPOINT-INDEX", "Nifty50 Div Point"},
-         {"NSE:NIFTYGROWSECT15-INDEX", "Nifty GrowSect 15"},
-         {"BSE:100LARGECAPTMC-INDEX", "LCTMCI"},
-         {"BSE:DFRG-INDEX", "DFRGRI"},
-         {"BSE:QUALITY-INDEX", "BSEQUI"},
-         {"BSE:DIVIDENDSTABILITY-INDEX", "BSEDSI"},
-         {"BSE:250SMALLCAP-INDEX", "SML250"},
-         {"BSE:150MIDCAP-INDEX", "MID150"},
-         {"BSE:ESG100-INDEX", "ESG100"},
-         {"BSE:SNXT50-INDEX", "SNXT50"},
-         {"BSE:SNSX50-INDEX", "SNSX50"},
-         {"BSE:UTILS-INDEX", "UTILS"},
-         {"BSE:GREENEX-INDEX", "GREENX"},
-         {"BSE:SENSEX-INDEX", "SENSEX"},
-         {"BSE:REALTY-INDEX", "REALTY"},
-         {"BSE:PRIVATEBANKS-INDEX", "BSEPBI"},
-         {"BSE:CDGS-INDEX", "CDGS"},
-         {"BSE:OILGAS-INDEX", "OILGAS"},
-         {"BSE:ENERGY-INDEX", "ENERGY"},
-         {"BSE:POWER-INDEX", "POWER"},
-         {"BSE:500-INDEX", "BSE500"},
-         {"BSE:100-INDEX", "BSE100"},
-         {"BSE:PSU-INDEX", "BSEPSU"},
-         {"BSE:HC-INDEX", "BSE HC"},
-         {"BSE:400MIDSMALLCAP-INDEX", "MSL400"},
-         {"BSE:BHRT22-INDEX", "BHRT22"},
-         {"BSE:BANKEX-INDEX", "BANKEX"},
-         {"BSE:ALLCAP-INDEX", "ALLCAP"},
-         {"BSE:INFRA-INDEX", "INFRA"},
-         {"BSE:CD-INDEX", "BSE CD"},
-         {"BSE:MIDCAP-INDEX", "MIDCAP"},
-         {"BSE:AUTO-INDEX", "AUTO"},
-         {"BSE:BASMTR-INDEX", "BASMTR"},
-         {"BSE:200-INDEX", "BSE200"},
-         {"BSE:FIN-INDEX", "FIN"},
-         {"BSE:CG-INDEX", "BSE CG"},
-         {"BSE:ENHANCEDVALUE-INDEX", "BSEEVI"},
-         {"BSE:TECK-INDEX", "TECK"},
-         {"BSE:METAL-INDEX", "METAL"},
-         {"BSE:CARBONEX-INDEX", "CARBON"},
-         {"BSE:MIDSEL-INDEX", "MIDSEL"},
-         {"BSE:SME IPO-INDEX", "SMEIPO"},
-         {"BSE:MOMENTUM-INDEX", "BSEMOI"},
-         {"BSE:TELCOM-INDEX", "TELCOM"},
-         {"BSE:CPSE-INDEX", "CPSE"},
-         {"BSE:250LARGEMIDCAP-INDEX", "LMI250"},
-         {"BSE:SMLCAP-INDEX", "SMLCAP"},
-         {"BSE:IT-INDEX", "BSE IT"},
-         {"BSE:INDIAMANUFACTURING-INDEX", "MFG"},
-         {"BSE:INDSTR-INDEX", "INDSTR"},
-         {"BSE:LOWVOLATILITY-INDEX", "BSELVI"},
-         {"BSE:LRGCAP-INDEX", "LRGCAP"},
-         {"BSE:IPO-INDEX", "BSEIPO"},
-         {"BSE:FMC-INDEX", "BSEFMC"},
-         {"BSE:SMLSEL-INDEX", "SMLSEL"},
-         {NULL, NULL}
-     };
-     
-     for (int i = 0; index_dict[i].symbol; i++) {
-         if (strcmp(index_dict[i].symbol, symbol) == 0) {
-             return index_dict[i].token;
+     if (!symbol) {
+         return NULL;
+     }
+
+     ensure_index_dict_loaded();
+
+     // Prefer in-memory cache from public API
+     if (g_index_dict_json) {
+         cJSON* item = cJSON_GetObjectItem(g_index_dict_json, symbol);
+         if (cJSON_IsString(item) && item->valuestring) {
+             return item->valuestring;
+         }
+     }
+
+     // Fallback to hardcoded mapping
+     for (int i = 0; k_fallback_index_dict[i].symbol; i++) {
+         if (strcmp(k_fallback_index_dict[i].symbol, symbol) == 0) {
+             return k_fallback_index_dict[i].token;
          }
      }
      return NULL;
@@ -1416,8 +1506,9 @@
          bool is_index = (symbol_len > 6 && strcmp(symbol + symbol_len - 6, "-INDEX") == 0);
          
          if (is_index && ws->data_type != FYERS_DATA_TYPE_DEPTH_UPDATE) {
-             // Index symbol - look up in index_dict
+             // Index symbol - look up in API-backed index mapping (with hardcoded fallback)
              const char* index_token = get_index_token(symbol);
+             bool exch_token_allocated = false;
              if (index_token) {
                  exch_token = index_token;
              } else {
@@ -1432,14 +1523,15 @@
                          memcpy(temp_token, colon + 1, token_len);
                          temp_token[token_len] = '\0';
                          exch_token = temp_token;
+                         exch_token_allocated = true;
                      }
                  }
              }
              
              if (exch_token) {
                  snprintf(hsm_token, sizeof(hsm_token), "if|%s|%s", segment, exch_token);
-                 if (exch_token != get_index_token(symbol)) {
-                     free((void*)exch_token);  // Free if we allocated it
+                 if (exch_token_allocated) {
+                     free((void*)exch_token);
                  }
              } else {
                  continue;  // Could not determine exchange token
