@@ -1,6 +1,6 @@
 <a href="https://fyers.in/"><img src="https://assets.fyers.in/images/logo.svg" align="right" /></a>
 
-# Fyers API C SDK : fyers-api-c - v1.3.0
+# Fyers API C SDK : fyers-api-c - v1.4.0
 
 The official Fyers C SDK for API-V3 Users [FYERS API](https://fyers.in/products/api/).
 
@@ -144,11 +144,18 @@ Try running the sample code from the [Fyers API documentation](https://myapi.fye
 
 ## APIs Supported by Fyers C SDK
 
+#### Authentication
+
+* Generate Auth Code
+* Generate Access Token
+* Generate Token with Refresh Token
+
 #### User
 
 * Profile
 * Funds
 * Holdings
+* Logout
 
 #### Transaction Info
 
@@ -191,8 +198,11 @@ Try running the sample code from the [Fyers API documentation](https://myapi.fye
 #### Other Transactions
 
 * Modify Orders
+* Modify Basket Orders
 * Cancel Order
+* Cancel Basket Orders
 * Exit Position
+* Exit All Positions
 * Convert Position
 * Attach Position Legs
 
@@ -206,6 +216,19 @@ Try running the sample code from the [Fyers API documentation](https://myapi.fye
 * Quotes
 * Market Depth
 * Option Chain
+* History Expiry Dates
+* History Underlying Symbols
+* History FNO Expired
+* Futures Chain
+
+#### Reports
+
+* Order History
+* Trade History
+* Charges History
+* Realised Profit
+* Tax PnL History
+* Ledger History
 
 #### Price Alert
 
@@ -265,6 +288,8 @@ fyers_model_attach_position_legs(model, cJSON_PrintUnformatted(pos));
 * Market Data Indices Update
 * Market Data Depth Update
 * Market Data Lite-Mode
+* Market Data Unsubscribe
+* Market Data Channel Resume
 
 ## Supported Platforms
 
@@ -301,3 +326,7 @@ Examples are in `build/examples/` (REST API, WebSocket data, WebSocket orders).
 * CMake package config for `find_package(fyers-api-c)`
 * Smart Orders and Smart Exits API support
 * TP/SL overlay on sync place/modify; `fyers_model_attach_position_legs`
+* Reports APIs (order/trade/charges/PnL/ledger history)
+* Expired F&O historical data (expiry dates, underlying symbols, FNO expired candles)
+* Futures chain
+* Refresh token exchange (`generate_token_with_refresh_token`)
