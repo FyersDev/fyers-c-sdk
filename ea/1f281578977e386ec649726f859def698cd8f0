@@ -1,0 +1,30 @@
+README.md
+  h_e5cd7b20a98a26 3
+  s_dbced6d2ad8a73::t_919bbf91177749 291-292
+  s_dbced6d2ad8a73::t_4bf7c24c7b485c 329-332
+  s_dbced6d2ad8a73::t_81509ea3be8361 219-231
+  s_dbced6d2ad8a73::t_1d5eedc445f940 158
+  s_dbced6d2ad8a73::t_63ac60683e58e0 201,203,205
+  s_dbced6d2ad8a73::t_1dec6fc08f2069 147-152
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "ea1f281578977e386ec649726f859def698cd8f0",
+  "prompts": {},
+  "humans": {
+    "h_e5cd7b20a98a26": {
+      "author": "kishore-fyers <kishorekumar@fyers.in>"
+    }
+  },
+  "sessions": {
+    "s_dbced6d2ad8a73": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "baacca42-135a-4a74-883a-b46a48eec27d",
+        "model": "auto-smart"
+      },
+      "human_author": "kishore-fyers <kishorekumar@fyers.in>"
+    }
+  }
+}
