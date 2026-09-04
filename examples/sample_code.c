@@ -430,8 +430,12 @@ void fy_place_order(fyers_session_t* session) {
     cJSON_AddStringToObject(json, "validity", "DAY");
     cJSON_AddNumberToObject(json, "disclosedQty", 0);
     cJSON_AddBoolToObject(json, "offlineOrder", false);
-    cJSON_AddNumberToObject(json, "stopLoss", 0);
-    cJSON_AddNumberToObject(json, "takeProfit", 0);
+    /*
+     * Uncomment any subset when you want TP/SL overlays (offsets, not absolute prices):
+     *   cJSON_AddNumberToObject(json, "takeProfit", 10.5);
+     *   cJSON_AddNumberToObject(json, "stopLoss", 5.0);
+     *   cJSON_AddNumberToObject(json, "legType", FYERS_LEG_TYPE_POINTS); // 1=points, 2=percent; defaults to 1
+     */
     cJSON_AddStringToObject(json, "orderTag", "tag1");
     cJSON_AddBoolToObject(json, "isSliceOrder", false);
     const char* params = cJSON_Print(json);
@@ -854,6 +858,8 @@ void fy_modify_order(fyers_session_t* session) {
     cJSON_AddNumberToObject(root, "type", 1);
     cJSON_AddNumberToObject(root, "side", 1);
     cJSON_AddNumberToObject(root, "limitPrice", 22.10);
+    cJSON_AddNumberToObject(root, "takeProfit", 15.0); 
+    cJSON_AddNullToObject(root, "stopLoss");
 
     // Convert to string
     char *params = cJSON_PrintUnformatted(root);
@@ -1112,6 +1118,50 @@ void fy_exit_position_by_id(fyers_session_t* session) {
     fyers_model_destroy(model);
 
 }
+/* PATCH /positions — attach or update TP/SL legs on an open position */
+void fy_attach_position_legs(fyers_session_t* session) {
+    const char* client_id = fyers_session_get_client_id(session);
+    const char* access_token = fyers_session_get_access_token(session);
+
+    if (!client_id || !access_token) {
+        fprintf(stderr, "Missing client_id or access_token in session\n");
+        return;
+    }
+
+    fyers_model_t* model = fyers_model_create(
+        client_id,
+        access_token,
+        false,
+        NULL,
+        FYERS_LOG_INFO
+    );
+
+    if (!model) {
+        fprintf(stderr, "Failed to create model\n");
+        return;
+    }
+
+    cJSON *root = cJSON_CreateObject();
+    /* Use position id from get_positions (e.g. "NSE:IDEA-EQ-INTRADAY") */
+    cJSON_AddStringToObject(root, "positionId", "NSE:TMPV-EQ-CNC");
+    /*
+     * takeProfit, stopLoss, legType are NOT mandatory — send any subset:
+     *   cJSON_AddNumberToObject(root, "takeProfit", 2.5);
+     *   cJSON_AddNumberToObject(root, "stopLoss", 1.5);
+     *   cJSON_AddNumberToObject(root, "legType", FYERS_LEG_TYPE_PERCENT); // optional; defaults to 1
+     */
+    cJSON_AddNumberToObject(root, "takeProfit", 13.9);
+    cJSON_AddNumberToObject(root, "stopLoss", 4);
+    cJSON_AddNumberToObject(root, "legType", FYERS_LEG_TYPE_POINTS);
+
+    char *params = cJSON_PrintUnformatted(root);
+    printf("Getting fy_attach_position_legs (PATCH /positions)\n");
+
+    fyers_response_t* response = fyers_model_attach_position_legs(model, params);
+    if (response) printf("fy_attach_position_legs response: %s\n", response->data ? response->data : "(null)");
+    fyers_response_destroy(response);
+    fyers_model_destroy(model);
+}
 void fy_pending_order_cancel(fyers_session_t* session) {
     fyers_session_set_access_token(session, "");
 
@@ -1182,7 +1232,7 @@ void fy_convert_position(fyers_session_t* session) {
     cJSON_AddNumberToObject(root, "overnight", 1);
     
     char *params = cJSON_PrintUnformatted(root);
-    printf("Getting fy_pending_order_cancel\n");
+    printf("Getting fy_convert_position\n");
 
     fyers_response_t* response = fyers_model_exit_positions(model,params);
     if (response) printf("fy_convert_position response: %s\n", response->data ? response->data : "(null)");
@@ -2010,7 +2060,6 @@ void fy_get_futures_chain(fyers_session_t* session) {
 
 int main() {
     // Replace with your app credentials
-    // const char* client_id = "M0R4WW1PYU-100";
     const char* client_id = "";
     const char* redirect_uri = "https://trade.fyers.in/api-login/redirect-uri/index.html";
     const char* secret_key = "";
@@ -2080,6 +2129,8 @@ int main() {
     // fy_exit_all_positions(session); // exit positions
     // fy_exit_position_by_segment(session); // exit all positions
     // fy_exit_position_by_id(session); // exit position by Segment Side & productType
+     fy_attach_position_legs(session); // PATCH attach/update TP/SL legs on open position
+     fy_get_positions(session);
     // fy_pending_order_cancel(session); // pending order cancel
     // fy_convert_position(session); // convert position
     

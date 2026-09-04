@@ -60,10 +60,17 @@ typedef enum {
     FYERS_PRODUCT_CNC,
     FYERS_PRODUCT_INTRADAY,
     FYERS_PRODUCT_MARGIN,
-    FYERS_PRODUCT_CO,
-    FYERS_PRODUCT_BO,
     FYERS_PRODUCT_MTF
 } fyers_product_type_t;
+
+/**
+ * @brief TP/SL offset measurement type (legType)
+ * Used with takeProfit / stopLoss on place, modify, and attach-position APIs.
+ */
+typedef enum {
+    FYERS_LEG_TYPE_POINTS = 1,   /**< Offset in price points (ticks) */
+    FYERS_LEG_TYPE_PERCENT = 2   /**< Offset as percentage of entry price */
+} fyers_leg_type_t;
 
 // Validity types
 typedef enum {

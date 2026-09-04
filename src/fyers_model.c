@@ -306,7 +306,10 @@ fyers_response_t* fyers_model_cancel_gtt_order(fyers_model_t* model, const char*
     return make_delete_request(model, FYERS_ENDPOINT_GTT_ORDERS, order_json);
 }
 
-// Position management
+// Position management — /positions
+//   DELETE fyers_model_exit_positions / fyers_model_exit_all_positions
+//   POST   fyers_model_convert_position
+//   PATCH  fyers_model_attach_position_legs
 fyers_response_t* fyers_model_exit_positions(fyers_model_t* model, const char* payload_json) {    
     return make_delete_request(model, FYERS_ENDPOINT_POSITIONS, payload_json);
 }
@@ -317,6 +320,10 @@ fyers_response_t* fyers_model_exit_all_positions(fyers_model_t* model) {
 
 fyers_response_t* fyers_model_convert_position(fyers_model_t* model, const char* position_json) {
     return make_post_request(model, FYERS_ENDPOINT_POSITIONS, position_json);
+}
+
+fyers_response_t* fyers_model_attach_position_legs(fyers_model_t* model, const char* request_json) {
+    return make_patch_request(model, FYERS_ENDPOINT_POSITIONS, request_json);
 }
 
 // Market data APIs
