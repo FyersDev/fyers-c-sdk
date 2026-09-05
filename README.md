@@ -273,6 +273,55 @@ cJSON_AddNumberToObject(pos, "legType", FYERS_LEG_TYPE_PERCENT);
 fyers_model_attach_position_legs(model, cJSON_PrintUnformatted(pos));
 ```
 
+## Expired F&O Historical Data
+
+`GET https://api-t1.fyers.in/data/history/fno/expired/expiry-dates?underlying_symbol=...&range_from=...&range_to=...&date_format=...`
+
+```c
+cJSON* json = cJSON_CreateObject();
+cJSON_AddStringToObject(json, "underlying_symbol", "NSE:NIFTY50-INDEX");
+cJSON_AddStringToObject(json, "range_from", "2024-01-01");
+cJSON_AddStringToObject(json, "range_to", "2024-12-31");
+cJSON_AddStringToObject(json, "date_format", "1");
+char* params = cJSON_PrintUnformatted(json);
+fyers_response_t* response = fyers_model_get_history_expiry_dates(model, params);
+```
+
+`GET https://api-t1.fyers.in/data/history/fno/expired/underlying-symbols?underlying_symbol=...&expiry_date=...`
+
+```c
+cJSON* json = cJSON_CreateObject();
+cJSON_AddStringToObject(json, "underlying_symbol", "NSE:NIFTY50-INDEX");
+cJSON_AddStringToObject(json, "expiry_date", "2024-11-28");
+char* params = cJSON_PrintUnformatted(json);
+fyers_response_t* response = fyers_model_get_history_underlying_symbols(model, params);
+```
+
+`GET https://api-t1.fyers.in/data/history/fno/expired/historical-data?symbol=...&resolution=...&date_format=...&range_from=...&range_to=...&greeks=...`
+
+```c
+cJSON* json = cJSON_CreateObject();
+cJSON_AddStringToObject(json, "symbol", "NSE:NIFTY24NOV22500CE");
+cJSON_AddStringToObject(json, "resolution", "5");
+cJSON_AddStringToObject(json, "date_format", "1");
+cJSON_AddStringToObject(json, "range_from", "2024-11-01");
+cJSON_AddStringToObject(json, "range_to", "2024-11-28");
+cJSON_AddStringToObject(json, "greeks", "1");
+char* params = cJSON_PrintUnformatted(json);
+fyers_response_t* response = fyers_model_get_history_fno_expired(model, params);
+```
+
+## Futures Chain
+
+`GET https://api-t1.fyers.in/data/futures-chain?symbol=...`
+
+```c
+fyers_response_t* response = fyers_model_get_futures_chain(model, "NSE:NIFTY50-INDEX");
+if (response && response->error == FYERS_OK)
+    printf("Futures chain: %.*s\n", (int)response->size, response->data);
+fyers_response_destroy(response);
+```
+
 ## Web Socket
 
 #### General Socket
