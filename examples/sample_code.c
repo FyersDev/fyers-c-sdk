@@ -1932,7 +1932,7 @@ void fy_get_history_expiry_dates(fyers_session_t* session) {
     printf("Getting fy_get_history_expiry_dates\n");
 
     cJSON* json = cJSON_CreateObject();
-    cJSON_AddStringToObject(json, "underlying_symbol", "NSE:NIFTY50-INDEX");
+    cJSON_AddStringToObject(json, "symbol", "NSE:NIFTY50-INDEX");
     cJSON_AddStringToObject(json, "range_from", "2024-01-01");
     cJSON_AddStringToObject(json, "range_to", "2024-12-31");
     cJSON_AddStringToObject(json, "date_format", "1");
@@ -1973,7 +1973,7 @@ void fy_get_history_underlying_symbols(fyers_session_t* session) {
     printf("Getting fy_get_history_underlying_symbols\n");
 
     cJSON* json = cJSON_CreateObject();
-    cJSON_AddStringToObject(json, "underlying_symbol", "NSE:NIFTY50-INDEX");
+    cJSON_AddStringToObject(json, "symbol", "NSE:NIFTY50-INDEX");
     cJSON_AddStringToObject(json, "expiry_date", "2024-11-28");
     char* params = cJSON_PrintUnformatted(json);
 
