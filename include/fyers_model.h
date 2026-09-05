@@ -51,10 +51,6 @@ FYERS_API fyers_response_t* fyers_model_get_charges_history(fyers_model_t* model
 FYERS_API fyers_response_t* fyers_model_get_realised_profit(fyers_model_t* model, const char* params_json);
 FYERS_API fyers_response_t* fyers_model_get_tax_pnl_history(fyers_model_t* model, const char* params_json);
 FYERS_API fyers_response_t* fyers_model_get_ledger_history(fyers_model_t* model, const char* params_json);
-FYERS_API fyers_response_t* fyers_model_get_history_expiry_dates(fyers_model_t* model, const char* params_json);
-FYERS_API fyers_response_t* fyers_model_get_history_underlying_symbols(fyers_model_t* model, const char* params_json);
-FYERS_API fyers_response_t* fyers_model_get_history_fno_expired(fyers_model_t* model, const char* params_json);
-FYERS_API fyers_response_t* fyers_model_get_futures_chain(fyers_model_t* model, const char* symbol);
 
 // Order placement
 FYERS_API fyers_response_t* fyers_model_place_order(fyers_model_t* model, const char* order_json);
@@ -88,6 +84,18 @@ FYERS_API fyers_response_t* fyers_model_get_history(fyers_model_t* model, const 
 FYERS_API fyers_response_t* fyers_model_get_quotes(fyers_model_t* model, const char* symbols);
 FYERS_API fyers_response_t* fyers_model_get_depth(fyers_model_t* model, const char* symbol, int ohlcv_flag);
 FYERS_API fyers_response_t* fyers_model_get_option_chain(fyers_model_t* model, const char* params_json);
+/**
+ * @brief Fetch futures chain for an underlying/index symbol
+ * @param model Model instance
+ * @param symbol Underlying symbol (e.g. "NSE:NIFTY50-INDEX")
+ * @return GET https://api-t1.fyers.in/data/futures-chain?symbol=...
+ */
+FYERS_API fyers_response_t* fyers_model_get_futures_chain(fyers_model_t* model, const char* symbol);
+
+// Expired F&O contracts data APIs
+FYERS_API fyers_response_t* fyers_model_get_history_expiry_dates(fyers_model_t* model, const char* params_json);
+FYERS_API fyers_response_t* fyers_model_get_history_underlying_symbols(fyers_model_t* model, const char* params_json);
+FYERS_API fyers_response_t* fyers_model_get_history_fno_expired(fyers_model_t* model, const char* params_json);
 
 // GTT APIs
 FYERS_API fyers_response_t* fyers_model_get_gtt_orderbook(fyers_model_t* model);

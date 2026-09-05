@@ -1932,9 +1932,10 @@ void fy_get_history_expiry_dates(fyers_session_t* session) {
     printf("Getting fy_get_history_expiry_dates\n");
 
     cJSON* json = cJSON_CreateObject();
-    cJSON_AddStringToObject(json, "underlying_symbol", "MCX:GOLDBEES");
-    cJSON_AddStringToObject(json, "range_from", "2025-01-01");
-    cJSON_AddStringToObject(json, "range_to", "2026-01-02");
+    cJSON_AddStringToObject(json, "underlying_symbol", "NSE:NIFTY50-INDEX");
+    cJSON_AddStringToObject(json, "range_from", "2024-01-01");
+    cJSON_AddStringToObject(json, "range_to", "2024-12-31");
+    cJSON_AddStringToObject(json, "date_format", "1");
     char* params = cJSON_PrintUnformatted(json);
 
     fyers_response_t* response = fyers_model_get_history_expiry_dates(model, params);
@@ -1972,8 +1973,8 @@ void fy_get_history_underlying_symbols(fyers_session_t* session) {
     printf("Getting fy_get_history_underlying_symbols\n");
 
     cJSON* json = cJSON_CreateObject();
-    cJSON_AddStringToObject(json, "underlying_symbol", "NSE:SBICARD26MAY980PE");
-    cJSON_AddStringToObject(json, "expiry_date", "2025-03-27");
+    cJSON_AddStringToObject(json, "underlying_symbol", "NSE:NIFTY50-INDEX");
+    cJSON_AddStringToObject(json, "expiry_date", "2024-11-28");
     char* params = cJSON_PrintUnformatted(json);
 
     fyers_response_t* response = fyers_model_get_history_underlying_symbols(model, params);
@@ -2011,12 +2012,12 @@ void fy_get_history_fno_expired(fyers_session_t* session) {
     printf("Getting fy_get_history_fno_expired\n");
 
     cJSON* json = cJSON_CreateObject();
-    cJSON_AddStringToObject(json, "symbol", "NSE:SBIN26JUN1010CE");
-    cJSON_AddStringToObject(json, "resolution", "3");
+    cJSON_AddStringToObject(json, "symbol", "NSE:NIFTY24NOV22500CE");
+    cJSON_AddStringToObject(json, "resolution", "5");
     cJSON_AddStringToObject(json, "date_format", "1");
-    cJSON_AddStringToObject(json, "oi_flag", "1");
-    cJSON_AddStringToObject(json, "range_from", "2026-04-01");
-    cJSON_AddStringToObject(json, "range_to", "2026-05-25");
+    cJSON_AddStringToObject(json, "greeks", "1");
+    cJSON_AddStringToObject(json, "range_from", "2024-11-01");
+    cJSON_AddStringToObject(json, "range_to", "2024-11-28");
     char* params = cJSON_PrintUnformatted(json);
 
     fyers_response_t* response = fyers_model_get_history_fno_expired(model, params);
