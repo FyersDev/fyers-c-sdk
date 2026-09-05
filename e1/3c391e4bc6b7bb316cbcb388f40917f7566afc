@@ -1,0 +1,54 @@
+README.md
+  s_dbced6d2ad8a73::t_d761af2b50bab1 314-324
+  s_1c002cc5bb22fc::t_ab2cc8ea7ce515 276-313
+include/fyers_config.h
+  s_dbced6d2ad8a73::t_12e0f48d145fa3 35-36
+examples/CMakeLists.txt
+  h_e5cd7b20a98a26 46-51
+include/fyers_model.h
+  s_e510a4063bc033::t_4347cab3d93f90 95-98
+  s_dbced6d2ad8a73::t_866e9f062ab0ff 87-93
+  s_e510a4063bc033::t_6124d86f227440 94
+examples/sample_code.c
+  s_1c002cc5bb22fc::t_eb58230fb75667 1976-1977
+  s_1c002cc5bb22fc::t_8272ef16d55b96 2015-2016,2018-2020
+  s_1c002cc5bb22fc::t_cfcddba0a85b6c 1935-1937
+  s_e510a4063bc033::t_f3248a4abf7e0c 1938
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "e13c391e4bc6b7bb316cbcb388f40917f7566afc",
+  "prompts": {},
+  "humans": {
+    "h_e5cd7b20a98a26": {
+      "author": "kishore-fyers <kishorekumar@fyers.in>"
+    }
+  },
+  "sessions": {
+    "s_1c002cc5bb22fc": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "a7527895-69f8-4e97-8d65-17ce4ed9cce9",
+        "model": "default"
+      },
+      "human_author": "kishore-fyers <kishorekumar@fyers.in>"
+    },
+    "s_dbced6d2ad8a73": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "baacca42-135a-4a74-883a-b46a48eec27d",
+        "model": "auto-smart"
+      },
+      "human_author": "kishore-fyers <kishorekumar@fyers.in>"
+    },
+    "s_e510a4063bc033": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "b80ed66b-faec-4cad-8533-3681dbd04ced",
+        "model": "claude-opus-5"
+      },
+      "human_author": "kishore-fyers <kishorekumar@fyers.in>"
+    }
+  }
+}
