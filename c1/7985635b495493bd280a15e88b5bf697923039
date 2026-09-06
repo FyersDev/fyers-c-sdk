@@ -1,0 +1,19 @@
+examples/sample_code.c
+  s_e510a4063bc033::t_74f7e9c6463627 1909,1950,1989,2032
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "c17985635b495493bd280a15e88b5bf697923039",
+  "prompts": {},
+  "sessions": {
+    "s_e510a4063bc033": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "b80ed66b-faec-4cad-8533-3681dbd04ced",
+        "model": "claude-opus-5"
+      },
+      "human_author": "kishore-fyers <kishorekumar@fyers.in>"
+    }
+  }
+}
