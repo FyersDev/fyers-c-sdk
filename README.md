@@ -297,7 +297,7 @@ char* params = cJSON_PrintUnformatted(json);
 fyers_response_t* response = fyers_model_get_history_underlying_symbols(model, params);
 ```
 
-`GET https://api-t1.fyers.in/data/history/fno/expired/historical-data?symbol=...&resolution=...&date_format=...&range_from=...&range_to=...&greeks=...`
+`GET https://api-t1.fyers.in/data/history/fno/expired/historical-data?symbol=...&resolution=...&date_format=...&range_from=...&range_to=...&include_greeks=...&include_oi=...`
 
 ```c
 cJSON* json = cJSON_CreateObject();
@@ -306,7 +306,8 @@ cJSON_AddStringToObject(json, "resolution", "5");
 cJSON_AddStringToObject(json, "date_format", "1");
 cJSON_AddStringToObject(json, "range_from", "2024-11-01");
 cJSON_AddStringToObject(json, "range_to", "2024-11-28");
-cJSON_AddStringToObject(json, "greeks", "1");
+cJSON_AddStringToObject(json, "include_greeks", "1");
+cJSON_AddStringToObject(json, "include_oi", "1");
 char* params = cJSON_PrintUnformatted(json);
 fyers_response_t* response = fyers_model_get_history_fno_expired(model, params);
 ```
