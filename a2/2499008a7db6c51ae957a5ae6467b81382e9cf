@@ -1,0 +1,26 @@
+examples/sample_code.c
+  h_e5cd7b20a98a26 2020-2021
+README.md
+  s_e510a4063bc033::t_61486181da556a 300,309-310
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.2",
+  "base_commit_sha": "a22499008a7db6c51ae957a5ae6467b81382e9cf",
+  "prompts": {},
+  "humans": {
+    "h_e5cd7b20a98a26": {
+      "author": "kishore-fyers <kishorekumar@fyers.in>"
+    }
+  },
+  "sessions": {
+    "s_e510a4063bc033": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "b80ed66b-faec-4cad-8533-3681dbd04ced",
+        "model": "claude-opus-5"
+      },
+      "human_author": "kishore-fyers <kishorekumar@fyers.in>"
+    }
+  }
+}
