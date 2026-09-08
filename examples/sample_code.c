@@ -2015,9 +2015,10 @@ void fy_get_history_fno_expired(fyers_session_t* session) {
     cJSON_AddStringToObject(json, "symbol", "NSE:NIFTY24NOV22500CE");
     cJSON_AddStringToObject(json, "resolution", "5");
     cJSON_AddStringToObject(json, "date_format", "1");
-    cJSON_AddStringToObject(json, "greeks", "1");
     cJSON_AddStringToObject(json, "range_from", "2024-11-01");
     cJSON_AddStringToObject(json, "range_to", "2024-11-28");
+    cJSON_AddStringToObject(json, "include_oi", "1");
+    cJSON_AddStringToObject(json, "include_greeks", "1");
     char* params = cJSON_PrintUnformatted(json);
 
     fyers_response_t* response = fyers_model_get_history_fno_expired(model, params);
