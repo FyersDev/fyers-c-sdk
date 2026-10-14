@@ -1,0 +1,22 @@
+src/fyers_data_ws.c
+  s_f77279e71cae9f::t_e61b1638e3bbb9 1902,1910
+  s_f77279e71cae9f::t_2404e03184e38c 1068
+  s_f77279e71cae9f::t_0ccd3816fe494a 1930
+  s_f77279e71cae9f::t_ca17002befc7b5 1854
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "8dac4f3aee47542a985ddbc545c789e36c02304f",
+  "prompts": {},
+  "sessions": {
+    "s_f77279e71cae9f": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "afa61f16-df33-48f4-9b04-70ce065fb54b",
+        "model": "claude-sonnet-5"
+      },
+      "human_author": "kishore-fyers <kishorekumar@fyers.in>"
+    }
+  }
+}
