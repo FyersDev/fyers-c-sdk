@@ -293,7 +293,7 @@
          return -1;
      }
      
-     *hsm_token_out = strdup(hsm_key_item->valuestring);
+     *hsm_token_out = strdup(access_token);
      
      cJSON_Delete(json);
      free(token_copy);
