@@ -1065,7 +1065,7 @@
                  // matching Python flow where on_open() is called from connect() after 2 seconds
              } else {
                  if (ws->on_error) {
-                     ws->on_error(ws, 12001, "Mode change failed");
+                     ws->on_error(ws, 12001, (string_val[0] != '\0') ? string_val : "Mode change failed");
                  }
              }
              free(string_val);
@@ -1851,7 +1851,7 @@
                                              }
                                          } else {
                                              if (ws->on_error) {
-                                                 ws->on_error(ws, 11001, "Authentication failed");
+                                                 ws->on_error(ws, 11001, (string_val[0] != '\0') ? string_val : "Authentication failed");
                                              }
                                          }
                                          free(string_val);
@@ -1899,7 +1899,7 @@
                                              }
                                          } else {
                                              if (ws->on_error) {
-                                                 ws->on_error(ws, 11011, "subscription failed");
+                                                 ws->on_error(ws, 11011, (string_val[0] != '\0') ? string_val : "subscription failed");
                                              }
                                          }
                                          free(string_val);
@@ -1907,7 +1907,7 @@
                                  }
                              }
                              break;
- 
+
                          case MSG_TYPE_UNSUBSCRIBE:
                              /* Unsubscription response - match Python __unsubscribe_resp */
                              {
@@ -1927,7 +1927,7 @@
                                                  }
                                              } else {
                                                  if (ws->on_error) {
-                                                     ws->on_error(ws, 11012, "Unsubscribe failed");
+                                                     ws->on_error(ws, 11012, (string_val[0] != '\0') ? string_val : "Unsubscribe failed");
                                                  }
                                              }
                                              free(string_val);
