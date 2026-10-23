@@ -22,9 +22,9 @@ typedef enum {
     FYERS_DATA_TYPE_DEPTH_UPDATE = 1
 } fyers_data_type_t;
 
-// Callback function types (matching Python SDK)
+// Callback function types
 typedef void (*fyers_data_ws_on_message_t)(fyers_data_ws_t* ws, const char* json_message);
-typedef void (*fyers_data_ws_on_error_t)(fyers_data_ws_t* ws, int code, const char* message);
+typedef void (*fyers_data_ws_on_error_t)(fyers_data_ws_t* ws, const char* json_error);
 typedef void (*fyers_data_ws_on_connect_t)(fyers_data_ws_t* ws);
 typedef void (*fyers_data_ws_on_close_t)(fyers_data_ws_t* ws, const char* reason);
 
@@ -128,6 +128,33 @@ FYERS_API bool fyers_data_ws_is_connected(fyers_data_ws_t* ws);
  * @param ws WebSocket instance
  */
 FYERS_API void fyers_data_ws_keep_running(fyers_data_ws_t* ws);
+
+/** Custom-message code: the Standard plan's symbol subscription limit. */
+#define FYERS_SYMBOL_LIMIT_EXCEEDED_CODE 51001
+
+/** A decoded HSM custom message (response type 51). */
+typedef struct {
+    int32_t code;         /**< Server-provided code, e.g. 51001. */
+    char message[512];    /**< Server-provided message, NUL-terminated. */
+    uint8_t ref_type;     /**< Response type of the related request, 0 if absent. */
+} fyers_custom_message_t;
+
+/**
+ * @brief Decode an HSM custom message frame (response type 51)
+ *
+ * Layout: [packetLen:2][respType:1][fieldCount:1] then, per field,
+ * [fieldID:1][fieldLen:2][value:fieldLen]. Field 1 is the code (int32),
+ * field 2 the message (UTF-8) and field 3 the ref_type. Unknown field ids are
+ * skipped for forward compatibility.
+ *
+ * @param data Frame bytes
+ * @param len Length of @p data
+ * @param out Receives the decoded message on success
+ * @return true on success, false if the frame is not a custom message or is truncated
+ */
+FYERS_API bool fyers_data_ws_parse_custom_message(const uint8_t* data,
+                                                  size_t len,
+                                                  fyers_custom_message_t* out);
 
 #ifdef __cplusplus
 }

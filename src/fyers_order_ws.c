@@ -177,7 +177,7 @@
      {NULL, NULL}
  };
  
- // Transform field names using mapper (matching Python __parse_order_data, __parse_trade_data, __parse_position_data)
+ // Transform field names using mapper
  static cJSON* transform_fields(cJSON* source_obj, const field_mapper_t* mapper) {
      if (!source_obj || !mapper) {
          return NULL;
@@ -205,7 +205,7 @@
      return result;
  }
  
- // Parse order data (matching Python __parse_order_data)
+ // Parse order data
  static cJSON* parse_order_data(fyers_order_ws_t* ws, cJSON* msg) {
      cJSON* orders_obj = cJSON_GetObjectItem(msg, "orders");
      if (!orders_obj) {
@@ -218,7 +218,7 @@
          return NULL;
      }
      
-     // Add orderNumStatus field (matching Python: id + ":" + str(org_ord_status))
+     // Add orderNumStatus field (id + ":" + org_ord_status)
      cJSON* id_field = cJSON_GetObjectItem(orders_obj, "id");
      cJSON* status_field = cJSON_GetObjectItem(orders_obj, "org_ord_status");
      if (id_field && status_field && cJSON_IsString(id_field) && cJSON_IsNumber(status_field)) {
@@ -239,7 +239,7 @@
      return result;
  }
  
- // Parse trade data (matching Python __parse_trade_data)
+ // Parse trade data
  static cJSON* parse_trade_data(fyers_order_ws_t* ws, cJSON* msg) {
      cJSON* trades_obj = cJSON_GetObjectItem(msg, "trades");
      if (!trades_obj) {
@@ -263,7 +263,7 @@
      return result;
  }
  
- // Parse position data (matching Python __parse_position_data)
+ // Parse position data
  static cJSON* parse_position_data(fyers_order_ws_t* ws, cJSON* msg) {
      cJSON* positions_obj = cJSON_GetObjectItem(msg, "positions");
      if (!positions_obj) {
@@ -287,7 +287,7 @@
      return result;
  }
  
- // Parse and route messages (matching Python __on_message)
+ // Parse and route messages
  static void handle_order_message(fyers_order_ws_t* ws, const char* message) {
      if (!ws || !message) {
          return;
@@ -362,7 +362,7 @@
      
      switch (reason) {
          case LWS_CALLBACK_CLIENT_APPEND_HANDSHAKE_HEADER:
-             // Add authorization header (matching Python header={"authorization": self.__access_token})
+             // Add authorization header
              {
                  unsigned char **p = (unsigned char **)in, *end = (*p) + len;
                  // Try using WSI_TOKEN_HTTP_AUTHORIZATION first (more reliable)
@@ -477,10 +477,10 @@
  }
  
  // WebSocket protocols
- // Use empty string as protocol name - server will negotiate (matching Python behavior)
+ // Use empty string as protocol name - server will negotiate
  static struct lws_protocols order_protocols[] = {
      {
-         "",  // Empty protocol name - let server choose (matching Python behavior)
+         "",  // Empty protocol name - let server choose
          callback_fyers_order_ws,
          0,
          4096,
@@ -500,21 +500,21 @@
      ccinfo.path = "/trade/v3";
      ccinfo.host = "socket.fyers.in";
      ccinfo.origin = "socket.fyers.in";
-     ccinfo.protocol = "";  // Empty protocol - let server negotiate (matching Python)
+     ccinfo.protocol = "";  // Empty protocol - let server negotiate
      ccinfo.ssl_connection = LCCSCF_USE_SSL | LCCSCF_SKIP_SERVER_CERT_HOSTNAME_CHECK;
      ccinfo.userdata = ws;
      
      return lws_client_connect_via_info(&ccinfo);
  }
  
- // Reconnection thread - matches Python __on_close reconnect logic
+ // Reconnection thread
  static void* order_reconnection_thread(void* arg) {
      fyers_order_ws_t* ws = (fyers_order_ws_t*)arg;
      if (!ws) return NULL;
      
-     int attempt_num = ws->reconnect_attempts + 1;  // 1-based for display (matching Python)
+     int attempt_num = ws->reconnect_attempts + 1;  // 1-based for display
      
-     // Log "Attempting reconnect X of Y" (matching Python)
+     // Log "Attempting reconnect X of Y"
      if (ws->logger) {
          if (ws->write_to_file) {
              fyers_logger_debug(ws->logger, "Attempting reconnect %d of %d...", attempt_num, ws->max_reconnect_attempts);
@@ -523,12 +523,12 @@
          }
      }
      
-     // Python: if (reconnect_attempts) % 5 == 0: reconnect_delay += 5
+     // Grow the delay by 5s on every 5th attempt
      if ((ws->reconnect_attempts % 5) == 0) {
          ws->reconnect_delay += 5;
      }
      
-     // Python: time.sleep(reconnect_delay)
+     // Back off before retrying
      sleep((unsigned int)ws->reconnect_delay);
      
      if (!ws->thread_running || !ws->restart_flag) {
@@ -536,10 +536,10 @@
          return NULL;
      }
      
-     // Python: reconnect_attempts += 1
+     // Count this attempt
      ws->reconnect_attempts++;
      
-     // Python: self.connect()
+     // Create a new connection
      struct lws* new_wsi = create_order_client_connection(ws);
      if (!new_wsi) {
          if (ws->on_error) {
@@ -562,7 +562,7 @@
          return NULL;
      }
      
-     // Python: connect() waits 2 seconds then calls on_open()
+     // Settle for 2 seconds before signalling the caller
      sleep(2);
      
      if (!ws->thread_running) {
@@ -721,7 +721,7 @@
      ccinfo.host = "socket.fyers.in";
      ccinfo.origin = "socket.fyers.in";
      ccinfo.protocol = order_protocols[0].name;
-     // Use SSL but skip certificate verification (matching Python sslopt={"cert_reqs": ssl.CERT_NONE})
+     // Use SSL but skip certificate verification
      ccinfo.ssl_connection = LCCSCF_USE_SSL | LCCSCF_SKIP_SERVER_CERT_HOSTNAME_CHECK;
      // Authorization header will be added in LWS_CALLBACK_CLIENT_APPEND_HANDSHAKE_HEADER callback
      ccinfo.userdata = ws;
@@ -734,11 +734,11 @@
      }
      
      // Start service thread
-     // Ping thread will be started in LWS_CALLBACK_CLIENT_ESTABLISHED (matching Python flow)
+     // Ping thread will be started in LWS_CALLBACK_CLIENT_ESTABLISHED
      ws->ws_thread_started = (pthread_create(&ws->ws_thread, NULL, ws_service_thread_order, ws) == 0);
      
      // Wait for connection to establish (check connected flag)
-     // Python waits 2 seconds, but we'll wait up to 5 seconds for actual connection
+     // Wait up to 5 seconds for the connection to come up
      int wait_count = 0;
      while (wait_count < 50 && !ws->connected) {  // 50 * 100ms = 5 seconds
          usleep(100000);  // 100ms
@@ -746,10 +746,10 @@
      }
      
      if (ws->connected) {
-         // Wait additional 2 seconds matching Python flow (connect() waits 2 seconds before calling on_open())
+         // Wait an additional 2 seconds before signalling the caller
          sleep(2);
          
-         // Call on_connect callback (matching Python's on_open() call from connect())
+         // Call on_connect callback
          if (ws->on_connect) {
              ws->on_connect(ws);
          }

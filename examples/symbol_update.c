@@ -8,8 +8,8 @@ void on_message(fyers_data_ws_t* ws, const char* json_message) {
     printf("Response: %s\n", json_message);
 }
 
-void on_error(fyers_data_ws_t* ws, int code, const char* message) {
-    printf("Error [%d]: %s\n", code, message);
+void on_error(fyers_data_ws_t* ws, const char* json_error) {
+    printf("Error: %s\n", json_error);
 }
 
 void on_connect(fyers_data_ws_t* ws) {    
