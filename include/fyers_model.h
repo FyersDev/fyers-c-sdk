@@ -100,6 +100,16 @@ FYERS_API fyers_response_t* fyers_model_get_history_fno_expired(fyers_model_t* m
 // GTT APIs
 FYERS_API fyers_response_t* fyers_model_get_gtt_orderbook(fyers_model_t* model);
 
+// Screeners
+// params_json is sent to the API as given. screener_id is required on the
+// standard, candlestick and technical endpoints; the standard endpoint also
+// accepts fields, universe, order_by, order, timeframe, expiry and option_type,
+// but only the ones listed in that screener's supported_params in the config.
+FYERS_API fyers_response_t* fyers_model_get_screeners_config(fyers_model_t* model);
+FYERS_API fyers_response_t* fyers_model_get_screeners_standard(fyers_model_t* model, const char* params_json);
+FYERS_API fyers_response_t* fyers_model_get_screeners_candlestick(fyers_model_t* model, const char* params_json);
+FYERS_API fyers_response_t* fyers_model_get_screeners_technical(fyers_model_t* model, const char* params_json);
+
 // Price alerts
 FYERS_API fyers_response_t* fyers_model_create_alert(fyers_model_t* model, const char* alert_json);
 FYERS_API fyers_response_t* fyers_model_get_alert(fyers_model_t* model);

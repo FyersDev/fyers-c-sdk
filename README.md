@@ -221,6 +221,13 @@ Try running the sample code from the [Fyers API documentation](https://myapi.fye
 * History FNO Expired
 * Futures Chain
 
+#### Screeners
+
+* Screeners Config
+* Screeners Standard
+* Screeners Candlestick
+* Screeners Technical
+
 #### Reports
 
 * Order History
