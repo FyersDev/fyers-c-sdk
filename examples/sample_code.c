@@ -391,8 +391,43 @@ void fy_get_quotes(fyers_session_t* session) {
     fyers_model_destroy(model);
 }
 
-// void fy_get_history(fyers_session_t* session) {
-// }
+void fy_get_quotes_v2(fyers_session_t* session) {
+    fyers_session_set_access_token(session, "");
+
+    const char* client_id = fyers_session_get_client_id(session);
+    const char* access_token = fyers_session_get_access_token(session);
+
+    if (!client_id || !access_token) {
+        fprintf(stderr, "Missing client_id or access_token in session\n");
+        return;
+    }
+
+    fyers_model_t* model = fyers_model_create(
+        client_id,
+        access_token,
+        false,
+        NULL,
+        FYERS_LOG_INFO
+    );
+
+    if (!model) {
+        fprintf(stderr, "Failed to create model\n");
+        return;
+    }
+
+    cJSON* json = cJSON_CreateObject();
+
+    cJSON_AddStringToObject(json, "symbols", "NSE:SBIN-EQ,NSE:INFY-EQ");
+
+    const char* params = cJSON_Print(json);
+    
+
+    printf("Getting fy_get_quotes_v2\n");
+    fyers_response_t* response = fyers_model_get_quotes_v2(model, params);
+    if (response) printf("fy_get_quotes_v2 response: %s\n", response->data ? response->data : "(null)");
+    fyers_response_destroy(response);
+    fyers_model_destroy(model);
+}
  
 void fy_place_order(fyers_session_t* session) {
     fyers_session_set_access_token(session, "");
@@ -2333,6 +2368,7 @@ int main() {
     // Market Data
     // fy_get_history(session); // get history
     // fy_get_quotes(session); // get quotes
+    // fy_get_quotes_v2(session); // get quotes via POST (quotes v2)
     // fy_get_depth(session); // get depth
     //fy_get_option_chain(session); // get option chain
 

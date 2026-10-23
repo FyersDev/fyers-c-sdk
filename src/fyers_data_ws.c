@@ -40,12 +40,100 @@
  #define MSG_TYPE_PAUSE 7
  #define MSG_TYPE_RESUME 8
  #define MSG_TYPE_MODE 12
+ #define MSG_TYPE_CUSTOM_MSG 51
  
  // Data types
  #define DATA_TYPE_SNAPSHOT 83
  #define DATA_TYPE_FULL_MODE 85
  #define DATA_TYPE_LITE_MODE 76
  
+ /* Maps a custom message's ref_type to the related request's type string,
+    mirroring the reference field-id mapping. */
+ static const char* custom_msg_type_for(uint8_t ref_type) {
+     switch (ref_type) {
+         case 1: return "cn";
+         case 4: return "sub";
+         case 5: return "unsub";
+         case 7: return "cp";
+         case 8: return "cr";
+         default: return "msg";
+     }
+ }
+
+ /* Reads a big-endian uint16 without assuming alignment. */
+ static uint16_t read_be16(const uint8_t* p) {
+     return (uint16_t)((uint16_t)p[0] << 8 | (uint16_t)p[1]);
+ }
+
+ /* Decodes an HSM custom message frame (response type 51).
+    Decodes the field-tagged code, message and ref_type. */
+ bool fyers_data_ws_parse_custom_message(const uint8_t* data,
+                                         size_t len,
+                                         fyers_custom_message_t* out) {
+     if (!data || !out) {
+         return false;
+     }
+     if (len < 4 || data[2] != MSG_TYPE_CUSTOM_MSG) {
+         return false;  /* not a custom message frame */
+     }
+
+     size_t end = (size_t)2 + read_be16(data);
+     if (end > len) {
+         return false;  /* truncated frame */
+     }
+
+     memset(out, 0, sizeof(*out));
+
+     uint8_t field_count = data[3];
+     size_t offset = 4;
+     for (uint8_t i = 0; i < field_count; i++) {
+         if (offset + 3 > end) {
+             return false;  /* truncated field header */
+         }
+         uint8_t field_id = data[offset];
+         uint16_t field_length = read_be16(data + offset + 1);
+         offset += 3;
+
+         if (offset + field_length > end) {
+             return false;  /* truncated field value */
+         }
+         const uint8_t* value = data + offset;
+         offset += field_length;
+
+         if (field_id == 1 && field_length == 4) {
+             out->code = (int32_t)(((uint32_t)value[0] << 24) |
+                                   ((uint32_t)value[1] << 16) |
+                                   ((uint32_t)value[2] << 8) |
+                                   (uint32_t)value[3]);
+         } else if (field_id == 2) {
+             size_t copy_len = field_length;
+             if (copy_len > sizeof(out->message) - 1) {
+                 copy_len = sizeof(out->message) - 1;
+             }
+             memcpy(out->message, value, copy_len);
+             out->message[copy_len] = '\0';
+         } else if (field_id == 3 && field_length == 1) {
+             out->ref_type = value[0];
+         }
+         /* Unknown field ids are skipped for forward compatibility */
+     }
+     return true;
+ }
+
+/* Sleeps whatever is left of the 2-second post-connect settle, measured from
+    `start`. The wait is a flat 2s with the handshake running in the websocket
+    thread, so the handshake overlaps the wait rather than preceding it. */
+ static void sleep_remainder_of_2s(const struct timespec* start) {
+     struct timespec now;
+     clock_gettime(CLOCK_MONOTONIC, &now);
+     long elapsed_us = (now.tv_sec - start->tv_sec) * 1000000L
+                     + (now.tv_nsec - start->tv_nsec) / 1000L;
+     long remaining_us = 2000000L - elapsed_us;
+     if (remaining_us > 0) {
+         usleep((useconds_t)remaining_us);
+     }
+ }
+
  // Forward declarations
  struct fyers_data_ws;
  struct message_queue;
@@ -128,6 +216,14 @@
      struct message_queue* message_queue_head;
      struct message_queue* message_queue_tail;
      
+     // Receive buffer: lws delivers a message larger than rx_buffer_size in
+     // several CLIENT_RECEIVE callbacks, so pieces are joined here until the
+     // whole message is available.
+     uint8_t* rx_buf;
+     size_t rx_len;
+     size_t rx_cap;
+     bool rx_discard;  // Dropping the rest of a message after an allocation failure
+     
      // State
      int ack_count;
      int update_count;
@@ -175,12 +271,37 @@
      pthread_t reconnect_thread;
      bool reconnect_thread_active;
      
-     // Last subscription for auto resubscribe after reconnect (matching Python: user subscribes in on_connect)
+     // Last subscription for auto resubscribe after reconnect (the user subscribes in on_connect)
      char** last_subscription_symbols;
      size_t last_subscription_count;
      fyers_data_type_t last_subscription_data_type;
      int last_subscription_channel;
  };
+
+ /* Emits an error to on_error as JSON: {"type":...,"code":...,"message":...,"s":"error"}.
+    `type` may be NULL for the few errors that carry no request type. */
+ static void emit_error(fyers_data_ws_t* ws, const char* type, int code, const char* message) {
+     if (!ws || !ws->on_error) {
+         return;
+     }
+     cJSON* obj = cJSON_CreateObject();
+     if (!obj) {
+         return;
+     }
+     if (type) {
+         cJSON_AddStringToObject(obj, "type", type);
+     }
+     cJSON_AddNumberToObject(obj, "code", code);
+     cJSON_AddStringToObject(obj, "message", message ? message : "");
+     cJSON_AddStringToObject(obj, "s", "error");
+     char* json = cJSON_PrintUnformatted(obj);
+     cJSON_Delete(obj);
+     if (json) {
+         ws->on_error(ws, json);
+         free(json);
+     }
+ }
+
  
  // Base64 decoding utility
  static int base64_decode(const char* input, size_t input_len, unsigned char* output, size_t* output_len) {
@@ -336,7 +457,12 @@
      
      // Request WRITEABLE callback if connected
      if (ws->lws_wsi && ws->connected) {
-         lws_callback_on_writable(ws->lws_wsi);
+         /* Wake the service thread; it requests the writable callback itself.
+            lws_callback_on_writable() must not be called off-thread, and
+            lws_service() sleeps until an lws event is queued. */
+         if (ws->lws_context) {
+             lws_cancel_service(ws->lws_context);
+         }
      }
      
      pthread_mutex_unlock(&ws->message_mutex);
@@ -364,7 +490,12 @@
          
          // When messages are queued, request a WRITEABLE callback
          if (ws->message_queue_head && ws->lws_wsi && ws->connected) {
-             lws_callback_on_writable(ws->lws_wsi);
+             /* Wake the service thread; it requests the writable callback itself.
+                lws_callback_on_writable() must not be called off-thread, and
+                lws_service() sleeps until an lws event is queued. */
+             if (ws->lws_context) {
+                 lws_cancel_service(ws->lws_context);
+             }
          }
          
          pthread_mutex_unlock(&ws->message_mutex);
@@ -392,7 +523,12 @@
          if (ws->lws_wsi && ws->connected) {
              add_message_to_queue(ws, ping_msg, sizeof(ping_msg));
              // Request WRITEABLE callback to send ping
-             lws_callback_on_writable(ws->lws_wsi);
+             /* Wake the service thread; it requests the writable callback itself.
+                lws_callback_on_writable() must not be called off-thread, and
+                lws_service() sleeps until an lws event is queued. */
+             if (ws->lws_context) {
+                 lws_cancel_service(ws->lws_context);
+             }
          }
          pthread_mutex_unlock(&ws->ws_mutex);
      }
@@ -887,7 +1023,7 @@
      return ws->resp_map[ws->resp_map_count - 1].data;
  }
  
- // Format and output response (matching Python format exactly)
+ // Format and output response
  static void response_output(fyers_data_ws_t* ws, cJSON* data_resp, const char* data_type, const char* hsm_token) {
      if (!ws || !data_resp || !ws->on_message) {
          return;
@@ -902,7 +1038,7 @@
      double precision_mult = pow(10.0, precision) * (double)multiplier;
      if (precision_mult <= 0) precision_mult = 1.0;
      
-     // Fields that need precision/multiplier adjustment (matching Python)
+     // Fields that need precision/multiplier adjustment
      const char* precision_fields[] = {
          "ltp", "bid_price", "ask_price", "avg_trade_price",
          "low_price", "high_price", "open_price", "prev_close_price"
@@ -952,7 +1088,7 @@
                  if (strcmp(field, "symbol") == 0 || strcmp(field, "type") == 0) {
                      continue;
                  }
-                 // Exclude lower_ckt and upper_ckt from precision calculation (matching Python line 956)
+                 // Exclude lower_ckt and upper_ckt from precision calculation
                  if (strcmp(field, "lower_ckt") == 0 || strcmp(field, "upper_ckt") == 0) {
                      continue; // Skip - will be set to 0 later
                  }
@@ -975,13 +1111,13 @@
              }
          }
          
-         // Set defaults for scrips (matching Python lines 965-966)
+         // Set defaults for scrips
          if (strcmp(data_type, "scrips") == 0) {
              // Set lower_ckt and upper_ckt to 0 (overwriting any parsed values)
              cJSON_AddNumberToObject(response, "lower_ckt", 0);
              cJSON_AddNumberToObject(response, "upper_ckt", 0);
              
-             // Calculate change and change percent (matching Python lines 967-969)
+             // Calculate change and change percent
              cJSON* prev_close = cJSON_GetObjectItem(response, "prev_close_price");
              cJSON* ltp = cJSON_GetObjectItem(response, "ltp");
              if (prev_close && ltp && cJSON_IsNumber(prev_close) && cJSON_IsNumber(ltp) && 
@@ -992,7 +1128,7 @@
                  cJSON_AddNumberToObject(response, "chp", round(chp * 10000) / 10000.0);
              }
              
-             // Remove unwanted fields (matching Python lines 970-973)
+             // Remove unwanted fields
              cJSON_DeleteItemFromObject(response, "OI");
              cJSON_DeleteItemFromObject(response, "Yhigh");
              cJSON_DeleteItemFromObject(response, "Ylow");
@@ -1009,14 +1145,14 @@
          }
      }
      
-     // Extract type prefix from HSM token (matching Python: "sf|nse_cm|3045" -> "sf")
+     // Extract type prefix from HSM token ("sf|nse_cm|3045" -> "sf")
      if (hsm_token && strlen(hsm_token) >= 2) {
          char type_prefix[3] = {0};
          memcpy(type_prefix, hsm_token, 2);
          cJSON_AddStringToObject(response, "type", type_prefix);
      }
      
-     // Look up symbol from symbol_token_map (matching Python: self.symbol_token[topic_name])
+     // Look up symbol from symbol_token_map
      if (hsm_token) {
          for (size_t i = 0; i < ws->symbol_token_count; i++) {
              if (strcmp(ws->symbol_token_map[i].hsm_token, hsm_token) == 0) {
@@ -1026,7 +1162,7 @@
          }
      }
      
-     // Convert to compact JSON string (matching Python dict format)
+     // Convert to compact JSON string
      char* json_str = cJSON_PrintUnformatted(response);
      if (json_str) {
          ws->on_message(ws, json_str);
@@ -1062,10 +1198,10 @@
                  }
                  
                  // Note: on_connect callback is called from fyers_data_ws_connect() after delay
-                 // matching Python flow where on_open() is called from connect() after 2 seconds
+                 // on_connect is signalled from connect() after the 2 second settle
              } else {
                  if (ws->on_error) {
-                     ws->on_error(ws, 12001, "Mode change failed");
+                     emit_error(ws, NULL, 12001, "Mode change failed");
                  }
              }
              free(string_val);
@@ -1073,7 +1209,45 @@
      }
  }
  
- // Parse datafeed response (type 6) - Main parsing function matching Python flow
+ /* Collects one CLIENT_RECEIVE piece. Returns true once `final` completes the
+    message, with *msg / *msg_len covering all of it (valid until the next call).
+    An unfragmented message is passed through without copying. */
+ static bool rx_assemble(fyers_data_ws_t* ws, const uint8_t* in, size_t len, bool final,
+                         const uint8_t** msg, size_t* msg_len) {
+     if (ws->rx_discard) {
+         ws->rx_discard = !final;
+         return false;
+     }
+     if (final && ws->rx_len == 0) {
+         *msg = in;
+         *msg_len = len;
+         return true;
+     }
+     
+     if (ws->rx_len + len > ws->rx_cap) {
+         size_t new_capacity = (ws->rx_cap == 0) ? 8192 : ws->rx_cap;
+         while (new_capacity < ws->rx_len + len) new_capacity *= 2;
+         uint8_t* new_buf = (uint8_t*)realloc(ws->rx_buf, new_capacity);
+         if (!new_buf) {
+             ws->rx_len = 0;
+             ws->rx_discard = !final;
+             return false;
+         }
+         ws->rx_buf = new_buf;
+         ws->rx_cap = new_capacity;
+     }
+     memcpy(ws->rx_buf + ws->rx_len, in, len);
+     ws->rx_len += len;
+     
+     if (!final) return false;
+     
+     *msg = ws->rx_buf;
+     *msg_len = ws->rx_len;
+     ws->rx_len = 0;
+     return true;
+ }
+     
+ // Parse datafeed response (type 6) - main parsing function
  static void parse_datafeed_response(fyers_data_ws_t* ws, const uint8_t* data, size_t len) {
      if (!ws || !data || len < 9) return;
      
@@ -1215,6 +1389,9 @@
              
              if (offset + 1 > len) break;
              uint8_t field_count_val = data[offset++];
+             // The record ends here whether or not its topic is known,
+             // so an unmapped topic must not shift parsing of the records after it
+             size_t fields_end = offset + (size_t)field_count_val * 4;
              
              // Find topic name
              char* topic_name = NULL;
@@ -1271,6 +1448,7 @@
                      response_output(ws, resp_data, data_type_str, topic_name);
                  }
              }
+             offset = fields_end;
              
          } else if (data_type == DATA_TYPE_LITE_MODE) {
              // Lite mode update (type 76)
@@ -1362,7 +1540,7 @@
      if (!status || strcmp(status->valuestring, "ok") != 0) {
          cJSON* msg = cJSON_GetObjectItem(resp_json, "message");
          if (ws->on_error && msg) {
-             ws->on_error(ws, -300, msg->valuestring);
+             emit_error(ws, "sub", -300, msg->valuestring);
          }
          cJSON_Delete(resp_json);
          return FYERS_ERROR;
@@ -1406,7 +1584,7 @@
              continue;
          }
          
-         // Build HSM token based on symbol type (matching Python logic)
+         // Build HSM token based on symbol type
          char hsm_token[256];
          bool update_dict = true;
          const char* exch_token = NULL;
@@ -1551,7 +1729,7 @@
      return FYERS_ERROR_NETWORK;
  }
  
- // Clear state before reconnect (matching Python: scrips_per_channel, symbol_token)
+ // Clear state before reconnect (scrips_per_channel, symbol_token)
  static void clear_reconnect_state(fyers_data_ws_t* ws) {
      if (!ws) return;
      
@@ -1566,7 +1744,7 @@
      ws->symbol_token_map = NULL;
      ws->symbol_token_count = 0;
      
-     // Clear scrips per channel (matching Python: self.scrips_per_channel[self.channel_num] = [])
+     // Clear scrips per channel
      if (ws->scrips_per_channel) {
          for (int i = 0; i < 31; i++) {
              ws->scrips_per_channel[i] = 0;
@@ -1623,21 +1801,21 @@
      ccinfo.path = "/hsm/v1-5/prod";
      ccinfo.host = "socket.fyers.in";
      ccinfo.origin = "socket.fyers.in";
-     ccinfo.protocol = "";  // Empty protocol - let server negotiate (matching Python)
+     ccinfo.protocol = "";  // Empty protocol - let server negotiate
      ccinfo.ssl_connection = LCCSCF_USE_SSL | LCCSCF_SKIP_SERVER_CERT_HOSTNAME_CHECK;
      ccinfo.userdata = ws;
      
      return lws_client_connect_via_info(&ccinfo);
  }
  
- // Reconnection thread - matches Python __on_close reconnect logic
+ // Reconnection thread
  static void* reconnection_thread(void* arg) {
      fyers_data_ws_t* ws = (fyers_data_ws_t*)arg;
      if (!ws) return NULL;
      
-     int attempt_num = ws->reconnect_attempts + 1;  // 1-based for display (matching Python)
+     int attempt_num = ws->reconnect_attempts + 1;  // 1-based for display
      
-     // Log "Attempting reconnect X of Y" (matching Python)
+     // Log "Attempting reconnect X of Y"
      if (ws->logger) {
          if (ws->write_to_file) {
              fyers_logger_debug(ws->logger, "Attempting reconnect %d of %d...", attempt_num, ws->max_reconnect_attempts);
@@ -1646,12 +1824,12 @@
          }
      }
      
-     // Python: if (reconnect_attempts) % 5 == 0: reconnect_delay += 5
+     // Grow the delay by 5s on every 5th attempt
      if ((ws->reconnect_attempts % 5) == 0) {
          ws->reconnect_delay += 5;
      }
      
-     // Python: time.sleep(reconnect_delay)
+     // Back off before retrying
      sleep((unsigned int)ws->reconnect_delay);
      
      // Check if we should abort (e.g. close_connection was called)
@@ -1660,23 +1838,27 @@
          return NULL;
      }
      
-     // Python: reconnect_attempts += 1
+     // Count this attempt
      ws->reconnect_attempts++;
      
-     // Python: clear state
+     // Clear state
      clear_reconnect_state(ws);
      
-     // Python: self.connect() -> create new connection
+     // Create a new connection
      struct lws* new_wsi = create_client_connection(ws);
      if (!new_wsi) {
          if (ws->on_error) {
-             ws->on_error(ws, -1, "Reconnection failed");
+             emit_error(ws, NULL, -1, "Reconnection failed");
          }
          ws->reconnect_thread_active = false;
          return NULL;
      }
      
      // Wait for connection to establish (up to 30 seconds)
+     // Timed from here so the 2s below overlaps the handshake.
+     struct timespec conn_start;
+     clock_gettime(CLOCK_MONOTONIC, &conn_start);
+
      int wait_count = 0;
      while (ws->thread_running && wait_count < 300) {
          usleep(100000);  // 100ms
@@ -1689,30 +1871,30 @@
          return NULL;
      }
      
-     // Python: connect() waits 2 seconds then calls on_open()
-     sleep(2);
+     // Settle for 2 seconds before signalling the caller
+     sleep_remainder_of_2s(&conn_start);
      
      if (!ws->thread_running) {
          ws->reconnect_thread_active = false;
          return NULL;
      }
      
-     // Reset reconnect state on successful reconnect (matching Python __on_open)
+     // Reset reconnect state on successful reconnect
      ws->reconnect_attempts = 0;
      ws->reconnect_delay = 0;
      
      // Auto resubscribe with retry - network may need time to stabilize after reconnect
-     // (Python: user subscribes in on_connect; we store and retry to handle CURL/HTTP flakiness)
+     // (the user subscribes in on_connect; we store and retry to handle CURL/HTTP flakiness)
      if (ws->last_subscription_symbols && ws->last_subscription_count > 0) {
          sleep(1);  // Extra delay for network stability
          if (ws->thread_running && resubscribe_with_retry(ws) != FYERS_OK) {
              if (ws->on_error) {
-                 ws->on_error(ws, -1, "Re-subscribe failed after reconnect");
+                 emit_error(ws, NULL, -1, "Re-subscribe failed after reconnect");
              }
          }
      }
      
-     // Call on_connect so user can do additional setup (matching Python flow)
+     // Call on_connect so user can do additional setup
      if (ws->thread_running && ws->on_connect) {
          ws->on_connect(ws);
      }
@@ -1725,6 +1907,7 @@
  static int callback_fyers_data_ws(struct lws* wsi, enum lws_callback_reasons reason,
                                     void* user, void* in, size_t len) {
      fyers_data_ws_t* ws = (fyers_data_ws_t*)user;
+     const uint8_t* rx_msg = NULL;
      
      if (!ws) {
          return 0;
@@ -1735,7 +1918,11 @@
              ws->connected = true;
              ws->lws_wsi = wsi;  // Ensure wsi is set
              
-             // Reset reconnect state on successful connection (matching Python __on_open)
+             // Drop any partial message left from a previous connection
+             ws->rx_len = 0;
+             ws->rx_discard = false;
+             
+             // Reset reconnect state on successful connection
              ws->reconnect_attempts = 0;
              ws->reconnect_delay = 0;
              
@@ -1823,9 +2010,12 @@
              break;
              
          case LWS_CALLBACK_CLIENT_RECEIVE:
-             // Handle incoming binary data
-             if (in && len > 0) {
-                 const uint8_t* data = (const uint8_t*)in;
+             // Handle incoming binary data once the whole message has arrived
+             if (in && len > 0 &&
+                 rx_assemble(ws, (const uint8_t*)in, len,
+                             lws_is_final_fragment(wsi) && lws_remaining_packet_payload(wsi) == 0,
+                             &rx_msg, &len)) {
+                 const uint8_t* data = rx_msg;
                  
                  // Parse response type
                  if (len >= 3) {
@@ -1833,7 +2023,7 @@
                      
                      switch (resp_type) {
                          case MSG_TYPE_AUTH:
-                             // Authentication response - parse properly matching Python
+                             // Authentication response
                              {
                                  size_t offset = 4;
                                  offset++; // Skip field ID
@@ -1851,7 +2041,7 @@
                                              }
                                          } else {
                                              if (ws->on_error) {
-                                                 ws->on_error(ws, 11001, "Authentication failed");
+                                                 emit_error(ws, "cn", 11001, "Authentication failed");
                                              }
                                          }
                                          free(string_val);
@@ -1882,7 +2072,7 @@
                              break;
                              
                          case MSG_TYPE_SUBSCRIBE:
-                             // Subscription response - parse properly matching Python
+                             // Subscription response
                              {
                                  size_t offset = 5;
                                  if (offset + 2 <= len) {
@@ -1899,7 +2089,7 @@
                                              }
                                          } else {
                                              if (ws->on_error) {
-                                                 ws->on_error(ws, 11011, "subscription failed");
+                                                 emit_error(ws, "sub", 11011, "subscription failed");
                                              }
                                          }
                                          free(string_val);
@@ -1909,7 +2099,7 @@
                              break;
  
                          case MSG_TYPE_UNSUBSCRIBE:
-                             /* Unsubscription response - match Python __unsubscribe_resp */
+                             /* Unsubscription response */
                              {
                                  size_t offset = 5;
                                  if (offset + 2 <= len) {
@@ -1927,11 +2117,26 @@
                                                  }
                                              } else {
                                                  if (ws->on_error) {
-                                                     ws->on_error(ws, 11012, "Unsubscribe failed");
+                                                     emit_error(ws, "unsub", 11012, "unsubscription failed");
                                                  }
                                              }
                                              free(string_val);
                                          }
+                                     }
+                                 }
+                             }
+                             break;
+
+                         case MSG_TYPE_CUSTOM_MSG:
+                             /* Custom message.
+                                Delivers the server-provided code and message
+                                through on_error; a malformed frame is dropped. */
+                             {
+                                 fyers_custom_message_t custom_msg;
+                                 if (fyers_data_ws_parse_custom_message(data, len, &custom_msg)) {
+                                     if (ws->on_error) {
+                                         emit_error(ws, custom_msg_type_for(custom_msg.ref_type),
+                                                   (int)custom_msg.code, custom_msg.message);
                                      }
                                  }
                              }
@@ -1945,12 +2150,12 @@
              ws->connected = false;
              ws->lws_wsi = NULL;
              
-             // Notify user of connection loss (matching Python "Error: Connection to remote host was lost")
+             // Notify user of connection loss
              if (ws->on_error) {
-                 ws->on_error(ws, -1, "Connection to remote host was lost.");
+                 emit_error(ws, NULL, -1, "Connection to remote host was lost.");
              }
              
-             // Handle reconnection (matching Python __on_close)
+             // Handle reconnection
              if (ws->restart_flag && ws->reconnect_attempts < ws->max_reconnect_attempts) {
                  // Spawn reconnection thread - do NOT block in callback
                  ws->reconnect_thread_active = true;
@@ -1960,7 +2165,7 @@
                          ws->on_close(ws, "Connection closed");
                      }
                  }
-                 // Note: on_close is NOT called when reconnecting (matching Python)
+                 // Note: on_close is NOT called when reconnecting
              } else {
                  if (ws->restart_flag && ws->reconnect_attempts >= ws->max_reconnect_attempts) {
                      if (ws->logger) {
@@ -1977,9 +2182,9 @@
              ws->connected = false;
              ws->lws_wsi = NULL;
              if (ws->on_error) {
-                 ws->on_error(ws, -1, "Connection error");
+                 emit_error(ws, NULL, -1, "Connection error");
              }
-             // Same reconnection logic as CLOSED (matching Python)
+             // Same reconnection logic as CLOSED
              if (ws->restart_flag && ws->reconnect_attempts < ws->max_reconnect_attempts) {
                  ws->reconnect_thread_active = true;
                  if (pthread_create(&ws->reconnect_thread, NULL, reconnection_thread, ws) != 0) {
@@ -2008,7 +2213,7 @@
  // Use empty string as protocol name - server will negotiate
  static struct lws_protocols protocols[] = {
      {
-         "",  // Empty protocol name - let server choose (matching Python behavior)
+         "",  // Empty protocol name - let server choose
          callback_fyers_data_ws,
          0,
          4096,
@@ -2021,7 +2226,16 @@
      fyers_data_ws_t* ws = (fyers_data_ws_t*)arg;
      
      while (ws->thread_running && ws->lws_context) {
-         lws_service(ws->lws_context, 50);
+         lws_service(ws->lws_context, 0);
+
+         /* Requesting the writable callback is only safe on this thread, so do
+            it here after each service pass. Producers enqueue and then call
+            lws_cancel_service() to wake us. */
+         pthread_mutex_lock(&ws->message_mutex);
+         if (ws->message_queue_head && ws->lws_wsi && ws->connected) {
+             lws_callback_on_writable(ws->lws_wsi);
+         }
+         pthread_mutex_unlock(&ws->message_mutex);
      }
      
      return NULL;
@@ -2099,9 +2313,17 @@
      ws->last_subscription_count = 0;
      
      // Extract HSM token
-     if (extract_hsm_token(access_token, &ws->hsm_token) != 0) {
+     int token_rc = extract_hsm_token(access_token, &ws->hsm_token);
+     if (token_rc != 0) {
          if (on_error) {
-             on_error(ws, -300, "Invalid token");
+             /* An expired token and an undecodable one are reported differently:
+                TOKEN_EXPIRED/-99 vs INVALID_CODE/-300. extract_hsm_token returns
+                -2 for expired, -1 for anything else. */
+             on_error(ws, token_rc == -2
+                 ? "{\"type\":\"cn\",\"code\":-99,"
+                   "\"message\":\"Token is expired\",\"s\":\"error\"}"
+                 : "{\"type\":\"cn\",\"code\":-300,"
+                   "\"message\":\"Please provide valid token\",\"s\":\"error\"}");
          }
          fyers_data_ws_destroy(ws);
          return NULL;
@@ -2196,6 +2418,8 @@
      // Cleanup channel tracking
      free(ws->scrips_per_channel);
      
+     free(ws->rx_buf);
+     
      // Cleanup mutexes
      pthread_mutex_destroy(&ws->ws_mutex);
      pthread_mutex_destroy(&ws->message_mutex);
@@ -2250,9 +2474,9 @@
      ccinfo.path = "/hsm/v1-5/prod";
      ccinfo.host = "socket.fyers.in";
      ccinfo.origin = "socket.fyers.in";
-     // Use empty string protocol - let server negotiate (matching Python behavior)
+     // Use empty string protocol - let server negotiate
      ccinfo.protocol = protocols[0].name;  // Empty string ""
-     // Use SSL but skip certificate verification (matching Python sslopt={"cert_reqs": ssl.CERT_NONE})
+     // Use SSL but skip certificate verification
      ccinfo.ssl_connection = LCCSCF_USE_SSL | LCCSCF_SKIP_SERVER_CERT_HOSTNAME_CHECK;
      ccinfo.userdata = ws;
      
@@ -2269,7 +2493,11 @@
      ws->message_thread_started = (pthread_create(&ws->message_thread, NULL, message_queue_thread, ws) == 0);
      
      // Wait for connection to establish (check connected flag)
-     // Python waits 2 seconds, but we'll wait up to 5 seconds for actual connection
+     // Connection setup returns immediately, so time the 2s settle from here:
+     // the handshake overlaps it and the total stays 2s rather than handshake + 2s.
+     struct timespec conn_start;
+     clock_gettime(CLOCK_MONOTONIC, &conn_start);
+
      int wait_count = 0;
      while (wait_count < 50 && !ws->connected) {  // 50 * 100ms = 5 seconds
          usleep(100000);  // 100ms
@@ -2277,10 +2505,10 @@
      }
      
      if (ws->connected) {
-         // Wait additional 2 seconds matching Python flow
-         sleep(2);
+         // Sleep only the remainder of the 2 seconds
+         sleep_remainder_of_2s(&conn_start);
          
-         // Call on_connect callback (matching Python's on_open() call from connect())
+         // Call on_connect callback
          if (ws->on_connect) {
              ws->on_connect(ws);
          }
@@ -2327,7 +2555,7 @@
      ws->channel_num = channel;
      ws->data_type = data_type;  // Store data type for symbol conversion
      
-     // Store for auto resubscribe after reconnect (matching Python: user subscribes in on_connect)
+     // Store for auto resubscribe after reconnect (the user subscribes in on_connect)
      free_last_subscription(ws);
      ws->last_subscription_symbols = (char**)malloc(symbol_count * sizeof(char*));
      if (ws->last_subscription_symbols) {
@@ -2393,7 +2621,7 @@
      }
      if (!ws->valid_token) {
          if (ws->on_error) {
-             ws->on_error(ws, FYERS_ERROR_INVALID_PARAM, "Invalid token");
+             emit_error(ws, "cn", -300, "Please provide valid token");
          }
          return FYERS_ERROR_INVALID_PARAM;
      }
@@ -2411,12 +2639,13 @@
      }
      if (hsm_count == 0) {
          if (ws->on_error) {
-             ws->on_error(ws, -300, "No valid symbols to unsubscribe");
+             /* Unsubscribe emits this without a "type" key. */
+             emit_error(ws, NULL, -300, "Please provide a valid symbol");
          }
          return FYERS_ERROR_INVALID_PARAM;
      }
  
-     /* Send unsubscription in chunks of SUBSCRIPTION_CHUNK_SIZE (1500), matching Python */
+     /* Send unsubscription in chunks of SUBSCRIPTION_CHUNK_SIZE (1500) */
      for (size_t i = 0; i < hsm_count; i += SUBSCRIPTION_CHUNK_SIZE) {
          size_t chunk_count = hsm_count - i;
          if (chunk_count > SUBSCRIPTION_CHUNK_SIZE) {
