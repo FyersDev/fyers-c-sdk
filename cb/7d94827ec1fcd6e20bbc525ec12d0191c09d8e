@@ -1,0 +1,85 @@
+examples/index_update.c
+  s_b231661f750f89::t_e94f601c8106fe 11-12
+include/fyers_model.h
+  s_b231661f750f89::t_c6c96718c1eef0 85
+examples/depth_update.c
+  s_b231661f750f89::t_e94f601c8106fe 11-12
+src/fyers_model.c
+  s_b231661f750f89::t_c6c96718c1eef0 199-206,357,359
+  h_e5cd7b20a98a26 198,358
+  s_b231661f750f89::t_fb911448a33c36 360
+examples/symbol_update.c
+  s_b231661f750f89::t_e94f601c8106fe 11-12
+examples/unsubscribe_update.c
+  s_b231661f750f89::t_e94f601c8106fe 18-19
+src/fyers_data_ws.c
+  s_b231661f750f89::t_c45f21de490106 280,283-304
+  s_0bfb2608d73fce::t_7527cac17aad13 219-220,222-224
+  s_0bfb2608d73fce::t_e9e47065e08f94 1393-1394
+  s_0bfb2608d73fce::t_7cfc9c0a9de619 1910,1921-1923
+  s_b231661f750f89::t_2e5e44f4a258a6 460-462,493-495,526-528,2229-2238
+  s_0bfb2608d73fce::t_7de123d3319bfc 226,1226,1241,1243,1249,1924,2422
+  s_0bfb2608d73fce::t_fde17fa98777fc 225
+  s_0bfb2608d73fce::t_0a424336d0e1e4 1451
+  s_0bfb2608d73fce::t_5c3461c1276878 1212-1225,1227-1240,1242,1244-1248
+  s_8baf21c71afdc0::t_7199e1ab9f1e33 126-136,1859-1861,1875,2498-2500,2509
+  s_b231661f750f89::t_b8c64c42af07c9 2316-2317,2320-2326,2643
+  s_b231661f750f89::t_ac28081451ed89 51,69,123-125,221,274,281-282,1026,1041,1091,1114,1120,1131,1148,1155,1165,1201,1250,1392,1587,1732,1747,1804,1811,1816,1818,1827,1832,1841,1844,1847,1858,1874,1882,1887,1897,1925,2026,2075,2102,2131,2153,2158,2168,2187,2216,2319,2477,2479,2496-2497,2508,2511,2558,2642,2648
+  s_0bfb2608d73fce::t_cf79fe6053acf2 2421
+  s_b231661f750f89::t_f71e316f84f8b2 50,52-63,1204,1543,1851,1892,2044,2092,2120,2138-2139,2155,2185,2624
+  s_0bfb2608d73fce::t_b102468bdda90f 2013-2018
+  s_8baf21c71afdc0::t_be94583dd19af6 43,64-68,70-122,2129-2130,2132-2137
+  s_b231661f750f89::t_7187c364db192a 463-465,496-498,529-531
+  s_b231661f750f89::t_4d1b646321bc57 2140-2143
+examples/lite_symbol_update.c
+  s_b231661f750f89::t_e94f601c8106fe 11-12
+src/fyers_order_ws.c
+  s_b231661f750f89::t_d30c3628cac42b 180
+  s_b231661f750f89::t_ac28081451ed89 208,221,242,266,290,365,480,483,503,510,515,517,526,531,539,542,565,724,737,741,749,752
+examples/sample_code.c
+  s_b231661f750f89::t_c64eeb130785c1 394-416,424-425,427-430,2180
+  h_e5cd7b20a98a26 417-423,426
+include/fyers_order_ws.h
+  s_b231661f750f89::t_ac28081451ed89 19
+include/fyers_data_ws.h
+  s_8baf21c71afdc0::t_02daf74dc867d3 132-158
+  s_b231661f750f89::t_f71e316f84f8b2 27
+  s_b231661f750f89::t_ac28081451ed89 25
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "cb7d94827ec1fcd6e20bbc525ec12d0191c09d8e",
+  "prompts": {},
+  "humans": {
+    "h_e5cd7b20a98a26": {
+      "author": "kishore-fyers <kishorekumar@fyers.in>"
+    }
+  },
+  "sessions": {
+    "s_0bfb2608d73fce": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ce01da5d-5383-4e92-a4d3-e095f006c582",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "kishore-fyers <kishorekumar@fyers.in>"
+    },
+    "s_8baf21c71afdc0": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "33530d59-d9a7-4b04-8686-77221fae251b",
+        "model": "claude-opus-5"
+      },
+      "human_author": "kishore-fyers <kishorekumar@fyers.in>"
+    },
+    "s_b231661f750f89": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ca999b75-f714-497b-8263-0f010a436581",
+        "model": "claude-opus-5"
+      },
+      "human_author": "kishore-fyers <kishorekumar@fyers.in>"
+    }
+  }
+}
