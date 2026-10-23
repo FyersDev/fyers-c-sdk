@@ -13,6 +13,7 @@ extern "C" {
 // API URLs
 #define FYERS_API_BASE_URL "https://api-t1.fyers.in/api/v3"
 #define FYERS_DATA_API_BASE_URL "https://api-t1.fyers.in/data"
+#define FYERS_SCREENERS_API_BASE_URL "https://screeners.fyers.in/koshi/cug/api/v3"
 
 // API Endpoints
 #define FYERS_ENDPOINT_PROFILE "/profile"
@@ -48,6 +49,12 @@ extern "C" {
 #define FYERS_ENDPOINT_REALISED_PROFIT "/realised-pnl-history"
 #define FYERS_ENDPOINT_TAX_PNL_HISTORY "/tax-pnl-history"
 #define FYERS_ENDPOINT_LEDGER_HISTORY "/ledger-history"
+
+// Screener endpoints
+#define FYERS_ENDPOINT_SCREENERS_CONFIG "/screeners/config"
+#define FYERS_ENDPOINT_SCREENERS_STANDARD "/screeners/standard"
+#define FYERS_ENDPOINT_SCREENERS_CANDLESTICK "/screeners/candlestick"
+#define FYERS_ENDPOINT_SCREENERS_TECHNICAL "/screeners/technical"
 
 // Smart order endpoints
 #define FYERS_ENDPOINT_CREATE_SMARTORDER_STEP "/smart-order/step"

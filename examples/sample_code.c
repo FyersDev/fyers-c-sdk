@@ -1905,6 +1905,180 @@ void fy_get_ledger_history(fyers_session_t* session) {
     fyers_model_destroy(model);
 }
 
+// SCREENERS
+// Start with the config: it lists every screener with the params, universes,
+// columns, timeframes and expiries that screener accepts. The request params are
+// built as a JSON object and sent to the API as given.
+void fy_get_screeners_config(fyers_session_t* session) {
+    fyers_model_t* model = create_model_from_session(session);
+    if (!model) return;
+    printf("Getting fy_get_screeners_config\n");
+    fyers_response_t* response = fyers_model_get_screeners_config(model);
+    print_response("fy_get_screeners_config", response);
+    fyers_response_destroy(response);
+    fyers_model_destroy(model);
+}
+
+// Standard screener. screener_id is required. Every other param is optional and
+// only the ones listed in that screener's supported_params are accepted; leave
+// one out and the server applies the screener's own default.
+static void fy_run_screeners_standard(fyers_session_t* session, cJSON* req, const char* label) {
+    fyers_model_t* model = create_model_from_session(session);
+    if (!model) {
+        cJSON_Delete(req);
+        return;
+    }
+    char* req_str = cJSON_PrintUnformatted(req);
+    printf("Getting %s\n", label);
+    fyers_response_t* response = fyers_model_get_screeners_standard(model, req_str);
+    print_response(label, response);
+    fyers_response_destroy(response);
+    free(req_str);
+    cJSON_Delete(req);
+    fyers_model_destroy(model);
+}
+
+// Only screener_id: the screener's default universe, timeframe and sort are applied
+void fy_get_screeners_standard(fyers_session_t* session) {
+    cJSON* req = cJSON_CreateObject();
+    cJSON_AddStringToObject(req, "screener_id", "top_gainers");
+    fy_run_screeners_standard(session, req, "fy_get_screeners_standard");
+}
+
+// Pick the columns. Comma separated ids from the screener's column group, max 10
+void fy_get_screeners_standard_with_fields(fyers_session_t* session) {
+    cJSON* req = cJSON_CreateObject();
+    cJSON_AddStringToObject(req, "screener_id", "top_gainers");
+    cJSON_AddStringToObject(req, "fields", "t0_close_ltp,t0_per_change,t0_volume");
+    fy_run_screeners_standard(session, req, "fy_get_screeners_standard_with_fields");
+}
+
+// A universe from the screener's universe group. Eg: iw001 is Nifty 50
+void fy_get_screeners_standard_with_universe(fyers_session_t* session) {
+    cJSON* req = cJSON_CreateObject();
+    cJSON_AddStringToObject(req, "screener_id", "top_gainers");
+    cJSON_AddStringToObject(req, "universe", "iw001");
+    cJSON_AddStringToObject(req, "fields", "t0_close_ltp");
+    fy_run_screeners_standard(session, req, "fy_get_screeners_standard_with_universe");
+}
+
+// order_by is any column in the group, order is asc or desc
+void fy_get_screeners_standard_with_sort(fyers_session_t* session) {
+    cJSON* req = cJSON_CreateObject();
+    cJSON_AddStringToObject(req, "screener_id", "top_gainers");
+    cJSON_AddStringToObject(req, "fields", "t0_volume");
+    cJSON_AddStringToObject(req, "order_by", "t0_volume");
+    cJSON_AddStringToObject(req, "order", "desc");
+    fy_run_screeners_standard(session, req, "fy_get_screeners_standard_with_sort");
+}
+
+// A timeframe from the screener's allowed_timeframes. If you send a timeframe
+// and no order_by, the sort follows that timeframe
+void fy_get_screeners_standard_with_timeframe(fyers_session_t* session) {
+    cJSON* req = cJSON_CreateObject();
+    cJSON_AddStringToObject(req, "screener_id", "top_gainers");
+    cJSON_AddStringToObject(req, "timeframe", "c52_week");
+    cJSON_AddStringToObject(req, "fields", "c52_week_per_change");
+    fy_run_screeners_standard(session, req, "fy_get_screeners_standard_with_timeframe");
+}
+
+// Fundamental columns on a fundamentals screener
+void fy_get_screeners_standard_fundamentals(fyers_session_t* session) {
+    cJSON* req = cJSON_CreateObject();
+    cJSON_AddStringToObject(req, "screener_id", "undervalued_stocks");
+    cJSON_AddStringToObject(req, "fields", "pe_ratio,yearly_dividend_per_share,market_cap");
+    fy_run_screeners_standard(session, req, "fy_get_screeners_standard_fundamentals");
+}
+
+// Futures screener with a futures universe
+void fy_get_screeners_standard_futures(fyers_session_t* session) {
+    cJSON* req = cJSON_CreateObject();
+    cJSON_AddStringToObject(req, "screener_id", "fut_oi_gainers");
+    cJSON_AddStringToObject(req, "universe", "fw002");
+    cJSON_AddStringToObject(req, "fields", "oi,oi_per_change");
+    fy_run_screeners_standard(session, req, "fy_get_screeners_standard_futures");
+}
+
+// Options screener. option_type is CE or PE. Leave it out to get both
+void fy_get_screeners_standard_options(fyers_session_t* session) {
+    cJSON* req = cJSON_CreateObject();
+    cJSON_AddStringToObject(req, "screener_id", "top_oi_gainers");
+    cJSON_AddStringToObject(req, "option_type", "CE");
+    cJSON_AddStringToObject(req, "fields", "oi,oi_per_change");
+    fy_run_screeners_standard(session, req, "fy_get_screeners_standard_options");
+}
+
+// Options screener for one expiry. Send the epoch from the config
+// data.expiries[universe]. expiry "0" means all expiries
+void fy_get_screeners_standard_options_for_one_expiry(fyers_session_t* session) {
+    cJSON* req = cJSON_CreateObject();
+    cJSON_AddStringToObject(req, "screener_id", "top_oi_gainers");
+    cJSON_AddStringToObject(req, "universe", "ow001");
+    cJSON_AddStringToObject(req, "expiry", "1793095800");
+    cJSON_AddStringToObject(req, "option_type", "PE");
+    cJSON_AddStringToObject(req, "fields", "oi,oi_per_change");
+    fy_run_screeners_standard(session, req, "fy_get_screeners_standard_options_for_one_expiry");
+}
+
+// Commodity screener
+void fy_get_screeners_standard_commodity(fyers_session_t* session) {
+    cJSON* req = cJSON_CreateObject();
+    cJSON_AddStringToObject(req, "screener_id", "commodity_gainers");
+    fy_run_screeners_standard(session, req, "fy_get_screeners_standard_commodity");
+}
+
+// ETF screener
+void fy_get_screeners_standard_etf(fyers_session_t* session) {
+    cJSON* req = cJSON_CreateObject();
+    cJSON_AddStringToObject(req, "screener_id", "etf_gainers");
+    fy_run_screeners_standard(session, req, "fy_get_screeners_standard_etf");
+}
+
+// Technical screener. Takes screener_id only; the columns are fixed per screener.
+// Use an id from the config data.screeners_technical
+void fy_get_screeners_technical(fyers_session_t* session) {
+    fyers_model_t* model = create_model_from_session(session);
+    if (!model) return;
+    cJSON* req = cJSON_CreateObject();
+    cJSON_AddStringToObject(req, "screener_id", "mfi_overbought");
+    char* req_str = cJSON_PrintUnformatted(req);
+    printf("Getting fy_get_screeners_technical\n");
+    fyers_response_t* response = fyers_model_get_screeners_technical(model, req_str);
+    print_response("fy_get_screeners_technical", response);
+    fyers_response_destroy(response);
+    free(req_str);
+    cJSON_Delete(req);
+    fyers_model_destroy(model);
+}
+
+// Candlestick screener. Takes screener_id only; the columns are fixed per screener.
+// Use an id from the config data.screeners_candlestick
+void fy_get_screeners_candlestick(fyers_session_t* session) {
+    fyers_model_t* model = create_model_from_session(session);
+    if (!model) return;
+    cJSON* req = cJSON_CreateObject();
+    cJSON_AddStringToObject(req, "screener_id", "hammer");
+    char* req_str = cJSON_PrintUnformatted(req);
+    printf("Getting fy_get_screeners_candlestick\n");
+    fyers_response_t* response = fyers_model_get_screeners_candlestick(model, req_str);
+    print_response("fy_get_screeners_candlestick", response);
+    fyers_response_destroy(response);
+    free(req_str);
+    cJSON_Delete(req);
+    fyers_model_destroy(model);
+}
+
+// A rejected request comes back as
+// {"code": -50, "message": "<reason>", "s": "error", "data": null}
+// and the message says exactly what was wrong.
+// 'oi' is not in the equity column group, so this one is rejected.
+void fy_get_screeners_standard_invalid_request(fyers_session_t* session) {
+    cJSON* req = cJSON_CreateObject();
+    cJSON_AddStringToObject(req, "screener_id", "top_gainers");
+    cJSON_AddStringToObject(req, "fields", "oi");
+    fy_run_screeners_standard(session, req, "fy_get_screeners_standard_invalid_request");
+}
+
 void fy_get_history_expiry_dates(fyers_session_t* session) {
     fyers_session_set_access_token(session, "");
 
@@ -2110,6 +2284,23 @@ int main() {
     // fy_get_realised_profit(session); // get realised profit
     // fy_get_tax_pnl_history(session); // get tax pnl history
     // fy_get_ledger_history(session); // get ledger history
+
+    // Screeners
+    // fy_get_screeners_config(session); // get screeners config
+    // fy_get_screeners_standard(session); // standard screener, screener_id only
+    // fy_get_screeners_standard_with_fields(session); // standard screener with fields
+    // fy_get_screeners_standard_with_universe(session); // standard screener with universe
+    // fy_get_screeners_standard_with_sort(session); // standard screener with sorting
+    // fy_get_screeners_standard_with_timeframe(session); // standard screener with timeframe
+    // fy_get_screeners_standard_fundamentals(session); // standard screener, fundamental fields
+    // fy_get_screeners_standard_futures(session); // standard screener, futures
+    // fy_get_screeners_standard_options(session); // standard screener, options
+    // fy_get_screeners_standard_options_for_one_expiry(session); // standard screener, one expiry
+    // fy_get_screeners_standard_commodity(session); // standard screener, commodity
+    // fy_get_screeners_standard_etf(session); // standard screener, ETF
+    // fy_get_screeners_technical(session); // technical screener
+    // fy_get_screeners_candlestick(session); // candlestick screener
+    // fy_get_screeners_standard_invalid_request(session); // rejected request
 
     // Order Placement
     // fy_place_order(session); // place order

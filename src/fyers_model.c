@@ -187,6 +187,21 @@ static fyers_response_t* make_get_request(fyers_model_t* model,
     return fyers_http_client_get(model->http_client, url, model->header);
 }
 
+// The screener endpoints live on their own host, not on the trading API.
+static fyers_response_t* make_screeners_get_request(fyers_model_t* model,
+                                                    const char* endpoint,
+                                                    const char* params) {
+    char url[1024];
+    snprintf(url, sizeof(url), "%s%s", FYERS_SCREENERS_API_BASE_URL, endpoint);
+
+    if (params && params[0] != '\0') {
+        strncat(url, "?", sizeof(url) - strlen(url) - 1);
+        strncat(url, params, sizeof(url) - strlen(url) - 1);
+    }
+
+    return fyers_http_client_get(model->http_client, url, model->header);
+}
+
 static fyers_response_t* make_post_request(fyers_model_t* model,
                                             const char* endpoint,
                                             const char* data) {
@@ -498,6 +513,31 @@ fyers_response_t* fyers_model_get_tax_pnl_history(fyers_model_t* model, const ch
 fyers_response_t* fyers_model_get_ledger_history(fyers_model_t* model, const char* params_json) {
     char* query_str = json_to_query_string(params_json);
     fyers_response_t* response = make_get_request(model, FYERS_ENDPOINT_LEDGER_HISTORY, query_str, false);
+    free(query_str);
+    return response;
+}
+
+fyers_response_t* fyers_model_get_screeners_config(fyers_model_t* model) {
+    return make_screeners_get_request(model, FYERS_ENDPOINT_SCREENERS_CONFIG, NULL);
+}
+
+fyers_response_t* fyers_model_get_screeners_standard(fyers_model_t* model, const char* params_json) {
+    char* query_str = json_to_query_string(params_json);
+    fyers_response_t* response = make_screeners_get_request(model, FYERS_ENDPOINT_SCREENERS_STANDARD, query_str);
+    free(query_str);
+    return response;
+}
+
+fyers_response_t* fyers_model_get_screeners_candlestick(fyers_model_t* model, const char* params_json) {
+    char* query_str = json_to_query_string(params_json);
+    fyers_response_t* response = make_screeners_get_request(model, FYERS_ENDPOINT_SCREENERS_CANDLESTICK, query_str);
+    free(query_str);
+    return response;
+}
+
+fyers_response_t* fyers_model_get_screeners_technical(fyers_model_t* model, const char* params_json) {
+    char* query_str = json_to_query_string(params_json);
+    fyers_response_t* response = make_screeners_get_request(model, FYERS_ENDPOINT_SCREENERS_TECHNICAL, query_str);
     free(query_str);
     return response;
 }
