@@ -1,0 +1,14 @@
+include/fyers_config.h
+  h_e5cd7b20a98a26 16
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "9b8fc897d2aa305153e88754afece5f1694f4f05",
+  "prompts": {},
+  "humans": {
+    "h_e5cd7b20a98a26": {
+      "author": "kishore-fyers <kishorekumar@fyers.in>"
+    }
+  }
+}
