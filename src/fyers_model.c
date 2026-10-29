@@ -210,6 +210,15 @@ static fyers_response_t* make_post_request(fyers_model_t* model,
     return fyers_http_client_post(model->http_client, url, model->header, data);
 }
 
+
+static fyers_response_t* make_data_post_request(fyers_model_t* model,
+                                                 const char* endpoint,
+                                                 const char* data) {
+    char url[512];
+    snprintf(url, sizeof(url), "%s%s", FYERS_DATA_API_BASE_URL, endpoint);
+    return fyers_http_client_post(model->http_client, url, model->header, data);
+}
+
 static fyers_response_t* make_patch_request(fyers_model_t* model,
                                              const char* endpoint,
                                              const char* data) {
@@ -358,6 +367,10 @@ fyers_response_t* fyers_model_get_quotes(fyers_model_t* model, const char* symbo
     char params[512];
     snprintf(params, sizeof(params), "symbols=%s", symbols);
     return make_get_request(model, FYERS_ENDPOINT_QUOTES, params, true);
+}
+
+fyers_response_t* fyers_model_get_quotes_v2(fyers_model_t* model, const char* symbols) {
+    return make_data_post_request(model, FYERS_ENDPOINT_QUOTES, symbols);
 }
 
 fyers_response_t* fyers_model_get_depth(fyers_model_t* model, const char* symbol, int ohlcv_flag) {
