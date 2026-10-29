@@ -1,0 +1,36 @@
+examples/depth_update.c
+  h_e5cd7b20a98a26 11-12
+examples/index_update.c
+  h_e5cd7b20a98a26 11-12
+examples/lite_symbol_update.c
+  h_e5cd7b20a98a26 11-12
+examples/sample_code.c
+  h_e5cd7b20a98a26 394-430,2371
+examples/symbol_update.c
+  h_e5cd7b20a98a26 11-12
+examples/unsubscribe_update.c
+  h_e5cd7b20a98a26 18-19
+include/fyers_data_ws.h
+  h_e5cd7b20a98a26 25,27,132-158
+include/fyers_model.h
+  h_e5cd7b20a98a26 85
+include/fyers_order_ws.h
+  h_e5cd7b20a98a26 19
+src/fyers_data_ws.c
+  h_e5cd7b20a98a26 43,50-136,219-226,274,280-304,460-465,493-498,526-531,1026,1041,1091,1114,1120,1131,1148,1155,1165,1201,1204,1212-1250,1392-1394,1451,1543,1587,1732,1747,1804,1811,1816,1818,1827,1832,1841,1844,1847,1851,1858-1861,1874-1875,1882,1887,1892,1897,1910,1921-1925,2013-2018,2026,2044,2075,2092,2102,2120,2129-2143,2153,2155,2158,2168,2185,2187,2216,2229-2238,2316-2317,2319-2326,2421-2422,2477,2479,2496-2500,2508-2509,2511,2558,2624,2642-2643,2648
+src/fyers_model.c
+  h_e5cd7b20a98a26 213-221,372-375
+src/fyers_order_ws.c
+  h_e5cd7b20a98a26 180,208,221,242,266,290,365,480,483,503,510,515,517,526,531,539,542,565,724,737,741,749,752
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "2ae0c23e8e704174688f22b2babb0d87fdbb2f7f",
+  "prompts": {},
+  "humans": {
+    "h_e5cd7b20a98a26": {
+      "author": "kishore-fyers <kishorekumar@fyers.in>"
+    }
+  }
+}
