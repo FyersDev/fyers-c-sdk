@@ -213,7 +213,8 @@ Try running the sample code from the [Fyers API documentation](https://myapi.fye
 #### Data Api
 
 * History
-* Quotes
+* Quotes (GET)
+* Quotes V2 (POST)
 * Market Depth
 * Option Chain
 * History Expiry Dates
@@ -319,6 +320,34 @@ char* params = cJSON_PrintUnformatted(json);
 fyers_response_t* response = fyers_model_get_history_fno_expired(model, params);
 ```
 
+## Quotes
+
+`GET https://api-t1.fyers.in/data/quotes?symbols=...` — symbols in the query string.
+
+```c
+fyers_response_t* response = fyers_model_get_quotes(model, "NSE:SBIN-EQ");
+if (response && response->error == FYERS_OK)
+    printf("Quotes: %.*s\n", (int)response->size, response->data);
+fyers_response_destroy(response);
+```
+
+`POST https://api-t1.fyers.in/data/quotes` — symbols travel in the request body,
+which allows many more of them per request. This function takes a JSON document
+whose `symbols` field is a comma-separated list.
+
+```c
+cJSON* json = cJSON_CreateObject();
+cJSON_AddStringToObject(json, "symbols", "NSE:SBIN-EQ,NSE:INFY-EQ");
+char* params = cJSON_PrintUnformatted(json);
+
+fyers_response_t* response = fyers_model_get_quotes_v2(model, params);
+if (response && response->error == FYERS_OK)
+    printf("Quotes v2: %.*s\n", (int)response->size, response->data);
+fyers_response_destroy(response);
+free(params);
+cJSON_Delete(json);
+```
+
 ## Futures Chain
 
 `GET https://api-t1.fyers.in/data/futures-chain?symbol=...`
@@ -386,4 +415,5 @@ Examples are in `build/examples/` (REST API, WebSocket data, WebSocket orders).
 * Reports APIs (order/trade/charges/PnL/ledger history)
 * Expired F&O historical data (expiry dates, underlying symbols, FNO expired candles)
 * Futures chain
+* Quotes V2 (`fyers_model_get_quotes_v2`) — POST quotes with symbols in the body
 * Refresh token exchange (`generate_token_with_refresh_token`)
