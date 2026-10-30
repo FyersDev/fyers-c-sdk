@@ -1,0 +1,19 @@
+README.md
+  s_8f0a79c4ddbe5b::t_01829eaa242fc1 216-217,323-350,418
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "435e76936099a61eba0de57b720c40bdcf5f5fd3",
+  "prompts": {},
+  "sessions": {
+    "s_8f0a79c4ddbe5b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "1cf5cf5c-db90-41b8-a258-420aadf17379",
+        "model": "claude-opus-5"
+      },
+      "human_author": "kishore-fyers <kishorekumar@fyers.in>"
+    }
+  }
+}
