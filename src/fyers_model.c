@@ -192,7 +192,7 @@ static fyers_response_t* make_screeners_get_request(fyers_model_t* model,
                                                     const char* endpoint,
                                                     const char* params) {
     char url[1024];
-    snprintf(url, sizeof(url), "%s%s", FYERS_SCREENERS_API_BASE_URL, endpoint);
+    snprintf(url, sizeof(url), "%s%s", FYERS_API_BASE_URL, endpoint);
 
     if (params && params[0] != '\0') {
         strncat(url, "?", sizeof(url) - strlen(url) - 1);
