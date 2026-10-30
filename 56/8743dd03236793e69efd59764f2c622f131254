@@ -1,0 +1,19 @@
+src/fyers_model.c
+  s_0ddf49e4e647c9::t_4b90d760bd6421 195
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "568743dd03236793e69efd59764f2c622f131254",
+  "prompts": {},
+  "sessions": {
+    "s_0ddf49e4e647c9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "96557881-8efb-49a8-8dab-8b20b3cf1c73",
+        "model": "claude-opus-5"
+      },
+      "human_author": "kishore-fyers <kishorekumar@fyers.in>"
+    }
+  }
+}
