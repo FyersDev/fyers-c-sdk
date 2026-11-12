@@ -202,6 +202,51 @@ void fy_logout(fyers_session_t* session) {
     fyers_model_destroy(model);
 }
 
+void fy_activate_killswitch(fyers_session_t* session) {
+    // WARNING: activating the kill switch blocks trading on the account.
+    const char* client_id = fyers_session_get_client_id(session);
+    const char* access_token = fyers_session_get_access_token(session);
+
+    if (!client_id || !access_token) {
+        fprintf(stderr, "Missing client_id or access_token in session\n");
+        return;
+    }
+
+    fyers_model_t* model = fyers_model_create(client_id, access_token, false, NULL, FYERS_LOG_INFO);
+    if (!model) {
+        fprintf(stderr, "Failed to create model\n");
+        return;
+    }
+
+    printf("Getting fy_activate_killswitch\n");
+    fyers_response_t* response = fyers_model_activate_killswitch(model);
+    if (response) printf("fy_activate_killswitch response: %s\n", response->data ? response->data : "(null)");
+    fyers_response_destroy(response);
+    fyers_model_destroy(model);
+}
+
+void fy_get_killswitch_status(fyers_session_t* session) {
+    const char* client_id = fyers_session_get_client_id(session);
+    const char* access_token = fyers_session_get_access_token(session);
+
+    if (!client_id || !access_token) {
+        fprintf(stderr, "Missing client_id or access_token in session\n");
+        return;
+    }
+
+    fyers_model_t* model = fyers_model_create(client_id, access_token, false, NULL, FYERS_LOG_INFO);
+    if (!model) {
+        fprintf(stderr, "Failed to create model\n");
+        return;
+    }
+
+    printf("Getting fy_get_killswitch_status\n");
+    fyers_response_t* response = fyers_model_get_killswitch_status(model);
+    if (response) printf("fy_get_killswitch_status response: %s\n", response->data ? response->data : "(null)");
+    fyers_response_destroy(response);
+    fyers_model_destroy(model);
+}
+
 void fy_get_orderbook(fyers_session_t* session) {
     fyers_session_set_access_token(session, "");
 
@@ -2302,6 +2347,8 @@ int main() {
     // fy_get_funds(session); // get funds
     // fy_get_holdings(session); // get holdings
     // fy_logout(session); // logout
+    // fy_activate_killswitch(session); // activate kill switch (blocks trading)
+    // fy_get_killswitch_status(session); // get kill switch status
 
     // Transaction Info
     // fy_get_orderbook(session); // get orderbook

@@ -1,6 +1,6 @@
 <a href="https://fyers.in/"><img src="https://assets.fyers.in/images/logo.svg" align="right" /></a>
 
-# Fyers API C SDK : fyers-api-c - v1.5.0
+# Fyers API C SDK : fyers-api-c - v1.6.0
 
 The official Fyers C SDK for API-V3 Users [FYERS API](https://fyers.in/products/api/).
 
@@ -156,6 +156,8 @@ Try running the sample code from the [Fyers API documentation](https://myapi.fye
 * Funds
 * Holdings
 * Logout
+* Activate Kill Switch
+* Kill Switch Status
 
 #### Transaction Info
 
@@ -346,6 +348,54 @@ if (response && response->error == FYERS_OK)
 fyers_response_destroy(response);
 free(params);
 cJSON_Delete(json);
+```
+
+## Kill Switch
+
+> **Warning:** activating the kill switch **blocks trading on the account**. Only call `fyers_model_activate_killswitch` when you intend to stop trading.
+
+| Function | Endpoint |
+|----------|----------|
+| `fyers_model_activate_killswitch(model)` | `POST https://api-t1.fyers.in/api/v3/killswitch/activate` (body `{}`) |
+| `fyers_model_get_killswitch_status(model)` | `GET https://api-t1.fyers.in/api/v3/killswitch/status` |
+
+Neither takes parameters. Errors follow the SDK's usual behaviour: a non-2xx response (such as the 400 below) sets `response->error` to `FYERS_ERROR`, `response->status_code` to the HTTP status, and `response->data` holds the API body unchanged.
+
+```c
+/* Activate (blocks trading) */
+fyers_response_t* response = fyers_model_activate_killswitch(model);
+if (response && response->error == FYERS_OK) {
+    printf("Kill switch: %.*s\n", (int)response->size, response->data);
+} else if (response) {
+    printf("Error (HTTP %d): %s\n", response->status_code, response->data ? response->data : "(null)");
+}
+fyers_response_destroy(response);
+
+/* Status */
+response = fyers_model_get_killswitch_status(model);
+if (response && response->error == FYERS_OK)
+    printf("Status: %.*s\n", (int)response->size, response->data);
+fyers_response_destroy(response);
+```
+
+Activate, success (HTTP 200):
+```json
+{"code": 200, "message": "Client placed on Break. ", "s": "ok"}
+```
+
+Activate, already active (HTTP 400, returned as an error with the body unchanged):
+```json
+{"code": 1500, "message": "Already on break, Please enjoy the break", "s": "error"}
+```
+
+Status, not active:
+```json
+{"killswitch": false, "openPositions": 0, "pendingOrders": 0, "message": "Kill Switch is not activated."}
+```
+
+Status, active:
+```json
+{"killswitch": true, "openPositions": 0, "pendingOrders": 0, "message": "Kill Switch is activated."}
 ```
 
 ## Futures Chain
