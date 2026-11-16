@@ -82,11 +82,34 @@ FYERS_API fyers_response_t* fyers_model_attach_position_legs(fyers_model_t* mode
 // Market data APIs
 FYERS_API fyers_response_t* fyers_model_get_history(fyers_model_t* model, const char* params_json);
 FYERS_API fyers_response_t* fyers_model_get_quotes(fyers_model_t* model, const char* symbols);
+FYERS_API fyers_response_t* fyers_model_get_quotes_v2(fyers_model_t* model, const char* symbols);
 FYERS_API fyers_response_t* fyers_model_get_depth(fyers_model_t* model, const char* symbol, int ohlcv_flag);
 FYERS_API fyers_response_t* fyers_model_get_option_chain(fyers_model_t* model, const char* params_json);
+/**
+ * @brief Fetch futures chain for an underlying/index symbol
+ * @param model Model instance
+ * @param symbol Underlying symbol (e.g. "NSE:NIFTY50-INDEX")
+ * @return GET https://api-t1.fyers.in/data/futures-chain?symbol=...
+ */
+FYERS_API fyers_response_t* fyers_model_get_futures_chain(fyers_model_t* model, const char* symbol);
+
+// Expired F&O contracts data APIs
+FYERS_API fyers_response_t* fyers_model_get_history_expiry_dates(fyers_model_t* model, const char* params_json);
+FYERS_API fyers_response_t* fyers_model_get_history_underlying_symbols(fyers_model_t* model, const char* params_json);
+FYERS_API fyers_response_t* fyers_model_get_history_fno_expired(fyers_model_t* model, const char* params_json);
 
 // GTT APIs
 FYERS_API fyers_response_t* fyers_model_get_gtt_orderbook(fyers_model_t* model);
+
+// Screeners
+// params_json is sent to the API as given. screener_id is required on the
+// standard, candlestick and technical endpoints; the standard endpoint also
+// accepts fields, universe, order_by, order, timeframe, expiry and option_type,
+// but only the ones listed in that screener's supported_params in the config.
+FYERS_API fyers_response_t* fyers_model_get_screeners_config(fyers_model_t* model);
+FYERS_API fyers_response_t* fyers_model_get_screeners_standard(fyers_model_t* model, const char* params_json);
+FYERS_API fyers_response_t* fyers_model_get_screeners_candlestick(fyers_model_t* model, const char* params_json);
+FYERS_API fyers_response_t* fyers_model_get_screeners_technical(fyers_model_t* model, const char* params_json);
 
 // Price alerts
 FYERS_API fyers_response_t* fyers_model_create_alert(fyers_model_t* model, const char* alert_json);

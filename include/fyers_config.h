@@ -32,6 +32,10 @@ extern "C" {
 #define FYERS_ENDPOINT_VALIDATE_REFRESH_TOKEN "/validate-refresh-token"
 #define FYERS_ENDPOINT_DATA_TOKEN "/data-token"
 #define FYERS_ENDPOINT_HISTORY "/history"
+#define FYERS_ENDPOINT_HISTORY_EXPIRY_DATES "/history/fno/expired/expiry-dates"
+#define FYERS_ENDPOINT_HISTORY_UNDERLYING_SYMBOLS "/history/fno/expired/underlying-symbols"
+#define FYERS_ENDPOINT_HISTORY_FNO_EXPIRED "/history/fno/expired/historical-data"
+#define FYERS_ENDPOINT_FUTURES_CHAIN "/futures-chain"
 #define FYERS_ENDPOINT_QUOTES "/quotes"
 #define FYERS_ENDPOINT_DEPTH "/depth"
 #define FYERS_ENDPOINT_OPTION_CHAIN "/options-chain-v3"
@@ -44,6 +48,12 @@ extern "C" {
 #define FYERS_ENDPOINT_REALISED_PROFIT "/realised-pnl-history"
 #define FYERS_ENDPOINT_TAX_PNL_HISTORY "/tax-pnl-history"
 #define FYERS_ENDPOINT_LEDGER_HISTORY "/ledger-history"
+
+// Screener endpoints
+#define FYERS_ENDPOINT_SCREENERS_CONFIG "/screeners/config"
+#define FYERS_ENDPOINT_SCREENERS_STANDARD "/screeners/standard"
+#define FYERS_ENDPOINT_SCREENERS_CANDLESTICK "/screeners/candlestick"
+#define FYERS_ENDPOINT_SCREENERS_TECHNICAL "/screeners/technical"
 
 // Smart order endpoints
 #define FYERS_ENDPOINT_CREATE_SMARTORDER_STEP "/smart-order/step"

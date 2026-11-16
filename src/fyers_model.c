@@ -187,11 +187,35 @@ static fyers_response_t* make_get_request(fyers_model_t* model,
     return fyers_http_client_get(model->http_client, url, model->header);
 }
 
+// The screener endpoints live on their own host, not on the trading API.
+static fyers_response_t* make_screeners_get_request(fyers_model_t* model,
+                                                    const char* endpoint,
+                                                    const char* params) {
+    char url[1024];
+    snprintf(url, sizeof(url), "%s%s", FYERS_API_BASE_URL, endpoint);
+
+    if (params && params[0] != '\0') {
+        strncat(url, "?", sizeof(url) - strlen(url) - 1);
+        strncat(url, params, sizeof(url) - strlen(url) - 1);
+    }
+
+    return fyers_http_client_get(model->http_client, url, model->header);
+}
+
 static fyers_response_t* make_post_request(fyers_model_t* model,
                                             const char* endpoint,
                                             const char* data) {
     char url[512];
     snprintf(url, sizeof(url), "%s%s", FYERS_API_BASE_URL, endpoint);
+    return fyers_http_client_post(model->http_client, url, model->header, data);
+}
+
+
+static fyers_response_t* make_data_post_request(fyers_model_t* model,
+                                                 const char* endpoint,
+                                                 const char* data) {
+    char url[512];
+    snprintf(url, sizeof(url), "%s%s", FYERS_DATA_API_BASE_URL, endpoint);
     return fyers_http_client_post(model->http_client, url, model->header, data);
 }
 
@@ -343,6 +367,10 @@ fyers_response_t* fyers_model_get_quotes(fyers_model_t* model, const char* symbo
     char params[512];
     snprintf(params, sizeof(params), "symbols=%s", symbols);
     return make_get_request(model, FYERS_ENDPOINT_QUOTES, params, true);
+}
+
+fyers_response_t* fyers_model_get_quotes_v2(fyers_model_t* model, const char* symbols) {
+    return make_data_post_request(model, FYERS_ENDPOINT_QUOTES, symbols);
 }
 
 fyers_response_t* fyers_model_get_depth(fyers_model_t* model, const char* symbol, int ohlcv_flag) {
@@ -498,6 +526,91 @@ fyers_response_t* fyers_model_get_tax_pnl_history(fyers_model_t* model, const ch
 fyers_response_t* fyers_model_get_ledger_history(fyers_model_t* model, const char* params_json) {
     char* query_str = json_to_query_string(params_json);
     fyers_response_t* response = make_get_request(model, FYERS_ENDPOINT_LEDGER_HISTORY, query_str, false);
+    free(query_str);
+    return response;
+}
+
+fyers_response_t* fyers_model_get_screeners_config(fyers_model_t* model) {
+    return make_screeners_get_request(model, FYERS_ENDPOINT_SCREENERS_CONFIG, NULL);
+}
+
+fyers_response_t* fyers_model_get_screeners_standard(fyers_model_t* model, const char* params_json) {
+    char* query_str = json_to_query_string(params_json);
+    fyers_response_t* response = make_screeners_get_request(model, FYERS_ENDPOINT_SCREENERS_STANDARD, query_str);
+    free(query_str);
+    return response;
+}
+
+fyers_response_t* fyers_model_get_screeners_candlestick(fyers_model_t* model, const char* params_json) {
+    char* query_str = json_to_query_string(params_json);
+    fyers_response_t* response = make_screeners_get_request(model, FYERS_ENDPOINT_SCREENERS_CANDLESTICK, query_str);
+    free(query_str);
+    return response;
+}
+
+fyers_response_t* fyers_model_get_screeners_technical(fyers_model_t* model, const char* params_json) {
+    char* query_str = json_to_query_string(params_json);
+    fyers_response_t* response = make_screeners_get_request(model, FYERS_ENDPOINT_SCREENERS_TECHNICAL, query_str);
+    free(query_str);
+    return response;
+}
+
+fyers_response_t* fyers_model_get_history_expiry_dates(fyers_model_t* model, const char* params_json) {
+    char* query_str = json_to_query_string(params_json);
+    if (!query_str) {
+        return NULL;
+    }
+
+    fyers_response_t* response = make_get_request(model, FYERS_ENDPOINT_HISTORY_EXPIRY_DATES, query_str, true);
+    free(query_str);
+    return response;
+}
+
+fyers_response_t* fyers_model_get_history_underlying_symbols(fyers_model_t* model, const char* params_json) {
+    char* query_str = json_to_query_string(params_json);
+    if (!query_str) {
+        return NULL;
+    }
+
+    fyers_response_t* response = make_get_request(model, FYERS_ENDPOINT_HISTORY_UNDERLYING_SYMBOLS, query_str, true);
+    free(query_str);
+    return response;
+}
+
+fyers_response_t* fyers_model_get_history_fno_expired(fyers_model_t* model, const char* params_json) {
+    char* query_str = json_to_query_string(params_json);
+    if (!query_str) {
+        return NULL;
+    }
+
+    fyers_response_t* response = make_get_request(model, FYERS_ENDPOINT_HISTORY_FNO_EXPIRED, query_str, true);
+    free(query_str);
+    return response;
+}
+
+fyers_response_t* fyers_model_get_futures_chain(fyers_model_t* model, const char* symbol) {
+    if (!symbol) {
+        return NULL;
+    }
+
+    cJSON* json = cJSON_CreateObject();
+    if (!json) {
+        return NULL;
+    }
+    cJSON_AddStringToObject(json, "symbol", symbol);
+    char* params_json = cJSON_PrintUnformatted(json);
+    cJSON_Delete(json);
+    if (!params_json) {
+        return NULL;
+    }
+
+    char* query_str = json_to_query_string(params_json);
+    cJSON_free(params_json);
+    if (!query_str) {
+        return NULL;
+    }
+
+    fyers_response_t* response = make_get_request(model, FYERS_ENDPOINT_FUTURES_CHAIN, query_str, true);
     free(query_str);
     return response;
 }

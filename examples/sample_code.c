@@ -391,8 +391,43 @@ void fy_get_quotes(fyers_session_t* session) {
     fyers_model_destroy(model);
 }
 
-// void fy_get_history(fyers_session_t* session) {
-// }
+void fy_get_quotes_v2(fyers_session_t* session) {
+    fyers_session_set_access_token(session, "");
+
+    const char* client_id = fyers_session_get_client_id(session);
+    const char* access_token = fyers_session_get_access_token(session);
+
+    if (!client_id || !access_token) {
+        fprintf(stderr, "Missing client_id or access_token in session\n");
+        return;
+    }
+
+    fyers_model_t* model = fyers_model_create(
+        client_id,
+        access_token,
+        false,
+        NULL,
+        FYERS_LOG_INFO
+    );
+
+    if (!model) {
+        fprintf(stderr, "Failed to create model\n");
+        return;
+    }
+
+    cJSON* json = cJSON_CreateObject();
+
+    cJSON_AddStringToObject(json, "symbols", "NSE:SBIN-EQ,NSE:INFY-EQ");
+
+    const char* params = cJSON_Print(json);
+    
+
+    printf("Getting fy_get_quotes_v2\n");
+    fyers_response_t* response = fyers_model_get_quotes_v2(model, params);
+    if (response) printf("fy_get_quotes_v2 response: %s\n", response->data ? response->data : "(null)");
+    fyers_response_destroy(response);
+    fyers_model_destroy(model);
+}
  
 void fy_place_order(fyers_session_t* session) {
     fyers_session_set_access_token(session, "");
@@ -1905,6 +1940,335 @@ void fy_get_ledger_history(fyers_session_t* session) {
     fyers_model_destroy(model);
 }
 
+// SCREENERS
+// Start with the config: it lists every screener with the params, universes,
+// columns, timeframes and expiries that screener accepts. The request params are
+// built as a JSON object and sent to the API as given.
+void fy_get_screeners_config(fyers_session_t* session) {
+    fyers_model_t* model = create_model_from_session(session);
+    if (!model) return;
+    printf("Getting fy_get_screeners_config\n");
+    fyers_response_t* response = fyers_model_get_screeners_config(model);
+    print_response("fy_get_screeners_config", response);
+    fyers_response_destroy(response);
+    fyers_model_destroy(model);
+}
+
+// Standard screener. screener_id is required. Every other param is optional and
+// only the ones listed in that screener's supported_params are accepted; leave
+// one out and the server applies the screener's own default.
+static void fy_run_screeners_standard(fyers_session_t* session, cJSON* req, const char* label) {
+    fyers_model_t* model = create_model_from_session(session);
+    if (!model) {
+        cJSON_Delete(req);
+        return;
+    }
+    char* req_str = cJSON_PrintUnformatted(req);
+    printf("Getting %s\n", label);
+    fyers_response_t* response = fyers_model_get_screeners_standard(model, req_str);
+    print_response(label, response);
+    fyers_response_destroy(response);
+    free(req_str);
+    cJSON_Delete(req);
+    fyers_model_destroy(model);
+}
+
+// Only screener_id: the screener's default universe, timeframe and sort are applied
+void fy_get_screeners_standard(fyers_session_t* session) {
+    cJSON* req = cJSON_CreateObject();
+    cJSON_AddStringToObject(req, "screener_id", "top_gainers");
+    fy_run_screeners_standard(session, req, "fy_get_screeners_standard");
+}
+
+// Pick the columns. Comma separated ids from the screener's column group, max 10
+void fy_get_screeners_standard_with_fields(fyers_session_t* session) {
+    cJSON* req = cJSON_CreateObject();
+    cJSON_AddStringToObject(req, "screener_id", "top_gainers");
+    cJSON_AddStringToObject(req, "fields", "t0_close_ltp,t0_per_change,t0_volume");
+    fy_run_screeners_standard(session, req, "fy_get_screeners_standard_with_fields");
+}
+
+// A universe from the screener's universe group. Eg: iw001 is Nifty 50
+void fy_get_screeners_standard_with_universe(fyers_session_t* session) {
+    cJSON* req = cJSON_CreateObject();
+    cJSON_AddStringToObject(req, "screener_id", "top_gainers");
+    cJSON_AddStringToObject(req, "universe", "iw001");
+    cJSON_AddStringToObject(req, "fields", "t0_close_ltp");
+    fy_run_screeners_standard(session, req, "fy_get_screeners_standard_with_universe");
+}
+
+// order_by is any column in the group, order is asc or desc
+void fy_get_screeners_standard_with_sort(fyers_session_t* session) {
+    cJSON* req = cJSON_CreateObject();
+    cJSON_AddStringToObject(req, "screener_id", "top_gainers");
+    cJSON_AddStringToObject(req, "fields", "t0_volume");
+    cJSON_AddStringToObject(req, "order_by", "t0_volume");
+    cJSON_AddStringToObject(req, "order", "desc");
+    fy_run_screeners_standard(session, req, "fy_get_screeners_standard_with_sort");
+}
+
+// A timeframe from the screener's allowed_timeframes. If you send a timeframe
+// and no order_by, the sort follows that timeframe
+void fy_get_screeners_standard_with_timeframe(fyers_session_t* session) {
+    cJSON* req = cJSON_CreateObject();
+    cJSON_AddStringToObject(req, "screener_id", "top_gainers");
+    cJSON_AddStringToObject(req, "timeframe", "c52_week");
+    cJSON_AddStringToObject(req, "fields", "c52_week_per_change");
+    fy_run_screeners_standard(session, req, "fy_get_screeners_standard_with_timeframe");
+}
+
+// Fundamental columns on a fundamentals screener
+void fy_get_screeners_standard_fundamentals(fyers_session_t* session) {
+    cJSON* req = cJSON_CreateObject();
+    cJSON_AddStringToObject(req, "screener_id", "undervalued_stocks");
+    cJSON_AddStringToObject(req, "fields", "pe_ratio,yearly_dividend_per_share,market_cap");
+    fy_run_screeners_standard(session, req, "fy_get_screeners_standard_fundamentals");
+}
+
+// Futures screener with a futures universe
+void fy_get_screeners_standard_futures(fyers_session_t* session) {
+    cJSON* req = cJSON_CreateObject();
+    cJSON_AddStringToObject(req, "screener_id", "fut_oi_gainers");
+    cJSON_AddStringToObject(req, "universe", "fw002");
+    cJSON_AddStringToObject(req, "fields", "oi,oi_per_change");
+    fy_run_screeners_standard(session, req, "fy_get_screeners_standard_futures");
+}
+
+// Options screener. option_type is CE or PE. Leave it out to get both
+void fy_get_screeners_standard_options(fyers_session_t* session) {
+    cJSON* req = cJSON_CreateObject();
+    cJSON_AddStringToObject(req, "screener_id", "top_oi_gainers");
+    cJSON_AddStringToObject(req, "option_type", "CE");
+    cJSON_AddStringToObject(req, "fields", "oi,oi_per_change");
+    fy_run_screeners_standard(session, req, "fy_get_screeners_standard_options");
+}
+
+// Options screener for one expiry. Send the epoch from the config
+// data.expiries[universe]. expiry "0" means all expiries
+void fy_get_screeners_standard_options_for_one_expiry(fyers_session_t* session) {
+    cJSON* req = cJSON_CreateObject();
+    cJSON_AddStringToObject(req, "screener_id", "top_oi_gainers");
+    cJSON_AddStringToObject(req, "universe", "ow001");
+    cJSON_AddStringToObject(req, "expiry", "1793095800");
+    cJSON_AddStringToObject(req, "option_type", "PE");
+    cJSON_AddStringToObject(req, "fields", "oi,oi_per_change");
+    fy_run_screeners_standard(session, req, "fy_get_screeners_standard_options_for_one_expiry");
+}
+
+// Commodity screener
+void fy_get_screeners_standard_commodity(fyers_session_t* session) {
+    cJSON* req = cJSON_CreateObject();
+    cJSON_AddStringToObject(req, "screener_id", "commodity_gainers");
+    fy_run_screeners_standard(session, req, "fy_get_screeners_standard_commodity");
+}
+
+// ETF screener
+void fy_get_screeners_standard_etf(fyers_session_t* session) {
+    cJSON* req = cJSON_CreateObject();
+    cJSON_AddStringToObject(req, "screener_id", "etf_gainers");
+    fy_run_screeners_standard(session, req, "fy_get_screeners_standard_etf");
+}
+
+// Technical screener. Takes screener_id only; the columns are fixed per screener.
+// Use an id from the config data.screeners_technical
+void fy_get_screeners_technical(fyers_session_t* session) {
+    fyers_model_t* model = create_model_from_session(session);
+    if (!model) return;
+    cJSON* req = cJSON_CreateObject();
+    cJSON_AddStringToObject(req, "screener_id", "mfi_overbought");
+    char* req_str = cJSON_PrintUnformatted(req);
+    printf("Getting fy_get_screeners_technical\n");
+    fyers_response_t* response = fyers_model_get_screeners_technical(model, req_str);
+    print_response("fy_get_screeners_technical", response);
+    fyers_response_destroy(response);
+    free(req_str);
+    cJSON_Delete(req);
+    fyers_model_destroy(model);
+}
+
+// Candlestick screener. Takes screener_id only; the columns are fixed per screener.
+// Use an id from the config data.screeners_candlestick
+void fy_get_screeners_candlestick(fyers_session_t* session) {
+    fyers_model_t* model = create_model_from_session(session);
+    if (!model) return;
+    cJSON* req = cJSON_CreateObject();
+    cJSON_AddStringToObject(req, "screener_id", "hammer");
+    char* req_str = cJSON_PrintUnformatted(req);
+    printf("Getting fy_get_screeners_candlestick\n");
+    fyers_response_t* response = fyers_model_get_screeners_candlestick(model, req_str);
+    print_response("fy_get_screeners_candlestick", response);
+    fyers_response_destroy(response);
+    free(req_str);
+    cJSON_Delete(req);
+    fyers_model_destroy(model);
+}
+
+// A rejected request comes back as
+// {"code": -50, "message": "<reason>", "s": "error", "data": null}
+// and the message says exactly what was wrong.
+// 'oi' is not in the equity column group, so this one is rejected.
+void fy_get_screeners_standard_invalid_request(fyers_session_t* session) {
+    cJSON* req = cJSON_CreateObject();
+    cJSON_AddStringToObject(req, "screener_id", "top_gainers");
+    cJSON_AddStringToObject(req, "fields", "oi");
+    fy_run_screeners_standard(session, req, "fy_get_screeners_standard_invalid_request");
+}
+
+void fy_get_history_expiry_dates(fyers_session_t* session) {
+    fyers_session_set_access_token(session, "");
+
+    const char* client_id = fyers_session_get_client_id(session);
+    const char* access_token = fyers_session_get_access_token(session);
+    
+    if (!client_id || !access_token) {
+        fprintf(stderr, "Missing client_id or access_token in session\n");
+        return; 
+    }
+
+    fyers_model_t* model = fyers_model_create(
+        client_id,
+        access_token,
+        false,
+        NULL,
+        FYERS_LOG_INFO
+    );
+
+    if (!model) {
+        fprintf(stderr, "Failed to create model\n");
+        return;
+    }
+
+    printf("Getting fy_get_history_expiry_dates\n");
+
+    cJSON* json = cJSON_CreateObject();
+    cJSON_AddStringToObject(json, "symbol", "NSE:NIFTY50-INDEX");
+    cJSON_AddStringToObject(json, "range_from", "2024-01-01");
+    cJSON_AddStringToObject(json, "range_to", "2024-12-31");
+    cJSON_AddStringToObject(json, "date_format", "1");
+    char* params = cJSON_PrintUnformatted(json);
+
+    fyers_response_t* response = fyers_model_get_history_expiry_dates(model, params);
+    if (response) printf("fy_get_history_expiry_dates response: %s\n", response->data ? response->data : "(null)");
+    fyers_response_destroy(response);
+    fyers_model_destroy(model);
+    cJSON_free(params);
+    cJSON_Delete(json);
+}
+
+void fy_get_history_underlying_symbols(fyers_session_t* session) {
+    fyers_session_set_access_token(session, "");
+
+    const char* client_id = fyers_session_get_client_id(session);
+    const char* access_token = fyers_session_get_access_token(session);
+    
+    if (!client_id || !access_token) {
+        fprintf(stderr, "Missing client_id or access_token in session\n");
+        return;
+    }
+
+    fyers_model_t* model = fyers_model_create(
+        client_id,
+        access_token,
+        false,
+        NULL,
+        FYERS_LOG_INFO
+    );
+
+    if (!model) {
+        fprintf(stderr, "Failed to create model\n");
+        return;
+    }
+
+    printf("Getting fy_get_history_underlying_symbols\n");
+
+    cJSON* json = cJSON_CreateObject();
+    cJSON_AddStringToObject(json, "symbol", "NSE:NIFTY50-INDEX");
+    cJSON_AddStringToObject(json, "expiry_date", "2024-11-28");
+    char* params = cJSON_PrintUnformatted(json);
+
+    fyers_response_t* response = fyers_model_get_history_underlying_symbols(model, params);
+    if (response) printf("fy_get_history_underlying_symbols response: %s\n", response->data ? response->data : "(null)");
+    fyers_response_destroy(response);
+    fyers_model_destroy(model);
+    cJSON_free(params);
+    cJSON_Delete(json);
+}
+
+void fy_get_history_fno_expired(fyers_session_t* session) {
+    fyers_session_set_access_token(session, "");
+
+    const char* client_id = fyers_session_get_client_id(session);
+    const char* access_token = fyers_session_get_access_token(session);
+
+    if (!client_id || !access_token) {
+        fprintf(stderr, "Missing client_id or access_token in session\n");
+        return;
+    }
+
+    fyers_model_t* model = fyers_model_create(
+        client_id,
+        access_token,
+        false,
+        NULL,
+        FYERS_LOG_INFO
+    );
+
+    if (!model) {
+        fprintf(stderr, "Failed to create model\n");
+        return;
+    }
+
+    printf("Getting fy_get_history_fno_expired\n");
+
+    cJSON* json = cJSON_CreateObject();
+    cJSON_AddStringToObject(json, "symbol", "NSE:NIFTY24NOV22500CE");
+    cJSON_AddStringToObject(json, "resolution", "5");
+    cJSON_AddStringToObject(json, "date_format", "1");
+    cJSON_AddStringToObject(json, "range_from", "2024-11-01");
+    cJSON_AddStringToObject(json, "range_to", "2024-11-28");
+    cJSON_AddStringToObject(json, "include_oi", "1");
+    cJSON_AddStringToObject(json, "include_greeks", "1");
+    char* params = cJSON_PrintUnformatted(json);
+
+    fyers_response_t* response = fyers_model_get_history_fno_expired(model, params);
+    if (response) printf("fy_get_history_fno_expired response: %s\n", response->data ? response->data : "(null)");
+    fyers_response_destroy(response);
+    fyers_model_destroy(model);
+    cJSON_free(params);
+    cJSON_Delete(json);
+}
+
+void fy_get_futures_chain(fyers_session_t* session) {
+    fyers_session_set_access_token(session, "");
+
+    const char* client_id = fyers_session_get_client_id(session);
+    const char* access_token = fyers_session_get_access_token(session);
+    
+    if (!client_id || !access_token) {
+        fprintf(stderr, "Missing client_id or access_token in session\n");
+        return;
+    }
+
+    fyers_model_t* model = fyers_model_create(
+        client_id,
+        access_token,
+        false,
+        NULL,
+        FYERS_LOG_INFO
+    );
+
+    if (!model) {
+        fprintf(stderr, "Failed to create model\n");
+        return;
+    }
+
+    printf("Getting fy_get_futures_chain\n");
+    fyers_response_t* response = fyers_model_get_futures_chain(model, "NSE:NIFTY50-INDEX");
+    if (response) printf("fy_get_futures_chain response: %s\n", response->data ? response->data : "(null)");
+    fyers_response_destroy(response);
+    fyers_model_destroy(model);
+}
+
 int main() {
     // Replace with your app credentials
     const char* client_id = "";
@@ -1956,6 +2320,23 @@ int main() {
     // fy_get_tax_pnl_history(session); // get tax pnl history
     // fy_get_ledger_history(session); // get ledger history
 
+    // Screeners
+    // fy_get_screeners_config(session); // get screeners config
+    // fy_get_screeners_standard(session); // standard screener, screener_id only
+    // fy_get_screeners_standard_with_fields(session); // standard screener with fields
+    // fy_get_screeners_standard_with_universe(session); // standard screener with universe
+    // fy_get_screeners_standard_with_sort(session); // standard screener with sorting
+    // fy_get_screeners_standard_with_timeframe(session); // standard screener with timeframe
+    // fy_get_screeners_standard_fundamentals(session); // standard screener, fundamental fields
+    // fy_get_screeners_standard_futures(session); // standard screener, futures
+    // fy_get_screeners_standard_options(session); // standard screener, options
+    // fy_get_screeners_standard_options_for_one_expiry(session); // standard screener, one expiry
+    // fy_get_screeners_standard_commodity(session); // standard screener, commodity
+    // fy_get_screeners_standard_etf(session); // standard screener, ETF
+    // fy_get_screeners_technical(session); // technical screener
+    // fy_get_screeners_candlestick(session); // candlestick screener
+    // fy_get_screeners_standard_invalid_request(session); // rejected request
+
     // Order Placement
     // fy_place_order(session); // place order
     // fy_multi_order(session); // place multi order
@@ -1987,6 +2368,7 @@ int main() {
     // Market Data
     // fy_get_history(session); // get history
     // fy_get_quotes(session); // get quotes
+    // fy_get_quotes_v2(session); // get quotes via POST (quotes v2)
     // fy_get_depth(session); // get depth
     //fy_get_option_chain(session); // get option chain
 
@@ -2011,6 +2393,10 @@ int main() {
    // example_get_smart_exit_trigger(session);
    // example_update_smart_exit_trigger(session);   /* active example, same as Go snippet */
    // example_activate_deactivate_smart_exit_trigger(session);
+     // fy_get_history_expiry_dates(session); // get expiry dates for an underlying symbol
+    // fy_get_history_underlying_symbols(session); // get related underlying symbols for an expiry date
+    // fy_get_history_fno_expired(session); // get historical candles for expired FNO contracts
+    // fy_get_futures_chain(session); // get futures chain for an index symbol
 
     fyers_session_destroy(session);
     fyers_cleanup();

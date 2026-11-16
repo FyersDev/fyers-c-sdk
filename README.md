@@ -1,6 +1,6 @@
 <a href="https://fyers.in/"><img src="https://assets.fyers.in/images/logo.svg" align="right" /></a>
 
-# Fyers API C SDK : fyers-api-c - v1.3.0
+# Fyers API C SDK : fyers-api-c - v1.5.0
 
 The official Fyers C SDK for API-V3 Users [FYERS API](https://fyers.in/products/api/).
 
@@ -144,11 +144,18 @@ Try running the sample code from the [Fyers API documentation](https://myapi.fye
 
 ## APIs Supported by Fyers C SDK
 
+#### Authentication
+
+* Generate Auth Code
+* Generate Access Token
+* Generate Token with Refresh Token
+
 #### User
 
 * Profile
 * Funds
 * Holdings
+* Logout
 
 #### Transaction Info
 
@@ -191,8 +198,11 @@ Try running the sample code from the [Fyers API documentation](https://myapi.fye
 #### Other Transactions
 
 * Modify Orders
+* Modify Basket Orders
 * Cancel Order
+* Cancel Basket Orders
 * Exit Position
+* Exit All Positions
 * Convert Position
 * Attach Position Legs
 
@@ -203,9 +213,30 @@ Try running the sample code from the [Fyers API documentation](https://myapi.fye
 #### Data Api
 
 * History
-* Quotes
+* Quotes (GET)
+* Quotes V2 (POST)
 * Market Depth
 * Option Chain
+* History Expiry Dates
+* History Underlying Symbols
+* History FNO Expired
+* Futures Chain
+
+#### Screeners
+
+* Screeners Config
+* Screeners Standard
+* Screeners Candlestick
+* Screeners Technical
+
+#### Reports
+
+* Order History
+* Trade History
+* Charges History
+* Realised Profit
+* Tax PnL History
+* Ledger History
 
 #### Price Alert
 
@@ -250,6 +281,84 @@ cJSON_AddNumberToObject(pos, "legType", FYERS_LEG_TYPE_PERCENT);
 fyers_model_attach_position_legs(model, cJSON_PrintUnformatted(pos));
 ```
 
+## Expired F&O Historical Data
+
+`GET https://api-t1.fyers.in/data/history/fno/expired/expiry-dates?symbol=...&range_from=...&range_to=...&date_format=...`
+
+```c
+cJSON* json = cJSON_CreateObject();
+cJSON_AddStringToObject(json, "symbol", "NSE:NIFTY50-INDEX");
+cJSON_AddStringToObject(json, "range_from", "2024-01-01");
+cJSON_AddStringToObject(json, "range_to", "2024-12-31");
+cJSON_AddStringToObject(json, "date_format", "1");
+char* params = cJSON_PrintUnformatted(json);
+fyers_response_t* response = fyers_model_get_history_expiry_dates(model, params);
+```
+
+`GET https://api-t1.fyers.in/data/history/fno/expired/underlying-symbols?symbol=...&expiry_date=...`
+
+```c
+cJSON* json = cJSON_CreateObject();
+cJSON_AddStringToObject(json, "symbol", "NSE:NIFTY50-INDEX");
+cJSON_AddStringToObject(json, "expiry_date", "2024-11-28");
+char* params = cJSON_PrintUnformatted(json);
+fyers_response_t* response = fyers_model_get_history_underlying_symbols(model, params);
+```
+
+`GET https://api-t1.fyers.in/data/history/fno/expired/historical-data?symbol=...&resolution=...&date_format=...&range_from=...&range_to=...&include_greeks=...&include_oi=...`
+
+```c
+cJSON* json = cJSON_CreateObject();
+cJSON_AddStringToObject(json, "symbol", "NSE:NIFTY24NOV22500CE");
+cJSON_AddStringToObject(json, "resolution", "5");
+cJSON_AddStringToObject(json, "date_format", "1");
+cJSON_AddStringToObject(json, "range_from", "2024-11-01");
+cJSON_AddStringToObject(json, "range_to", "2024-11-28");
+cJSON_AddStringToObject(json, "include_greeks", "1");
+cJSON_AddStringToObject(json, "include_oi", "1");
+char* params = cJSON_PrintUnformatted(json);
+fyers_response_t* response = fyers_model_get_history_fno_expired(model, params);
+```
+
+## Quotes
+
+`GET https://api-t1.fyers.in/data/quotes?symbols=...` — symbols in the query string.
+
+```c
+fyers_response_t* response = fyers_model_get_quotes(model, "NSE:SBIN-EQ");
+if (response && response->error == FYERS_OK)
+    printf("Quotes: %.*s\n", (int)response->size, response->data);
+fyers_response_destroy(response);
+```
+
+`POST https://api-t1.fyers.in/data/quotes` — symbols travel in the request body,
+which allows many more of them per request. This function takes a JSON document
+whose `symbols` field is a comma-separated list.
+
+```c
+cJSON* json = cJSON_CreateObject();
+cJSON_AddStringToObject(json, "symbols", "NSE:SBIN-EQ,NSE:INFY-EQ");
+char* params = cJSON_PrintUnformatted(json);
+
+fyers_response_t* response = fyers_model_get_quotes_v2(model, params);
+if (response && response->error == FYERS_OK)
+    printf("Quotes v2: %.*s\n", (int)response->size, response->data);
+fyers_response_destroy(response);
+free(params);
+cJSON_Delete(json);
+```
+
+## Futures Chain
+
+`GET https://api-t1.fyers.in/data/futures-chain?symbol=...`
+
+```c
+fyers_response_t* response = fyers_model_get_futures_chain(model, "NSE:NIFTY50-INDEX");
+if (response && response->error == FYERS_OK)
+    printf("Futures chain: %.*s\n", (int)response->size, response->data);
+fyers_response_destroy(response);
+```
+
 ## Web Socket
 
 #### General Socket
@@ -265,6 +374,8 @@ fyers_model_attach_position_legs(model, cJSON_PrintUnformatted(pos));
 * Market Data Indices Update
 * Market Data Depth Update
 * Market Data Lite-Mode
+* Market Data Unsubscribe
+* Market Data Channel Resume
 
 ## Supported Platforms
 
@@ -301,3 +412,8 @@ Examples are in `build/examples/` (REST API, WebSocket data, WebSocket orders).
 * CMake package config for `find_package(fyers-api-c)`
 * Smart Orders and Smart Exits API support
 * TP/SL overlay on sync place/modify; `fyers_model_attach_position_legs`
+* Reports APIs (order/trade/charges/PnL/ledger history)
+* Expired F&O historical data (expiry dates, underlying symbols, FNO expired candles)
+* Futures chain
+* Quotes V2 (`fyers_model_get_quotes_v2`) — POST quotes with symbols in the body
+* Refresh token exchange (`generate_token_with_refresh_token`)

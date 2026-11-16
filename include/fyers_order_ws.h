@@ -16,7 +16,7 @@ extern "C" {
 // Forward declaration
 typedef struct fyers_order_ws fyers_order_ws_t;
 
-// Callback function types (matching Python SDK)
+// Callback function types
 typedef void (*fyers_order_ws_on_trades_t)(fyers_order_ws_t* ws, const char* json_message);
 typedef void (*fyers_order_ws_on_positions_t)(fyers_order_ws_t* ws, const char* json_message);
 typedef void (*fyers_order_ws_on_orders_t)(fyers_order_ws_t* ws, const char* json_message);
