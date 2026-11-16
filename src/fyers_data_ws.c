@@ -917,8 +917,8 @@
      curl_easy_setopt(curl, CURLOPT_URL, INDEX_HSM_MAPPING_URL);
      curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, index_curl_write);
      curl_easy_setopt(curl, CURLOPT_WRITEDATA, &buf);
-     curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
-     curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
+     curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 1L);
+     curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 2L);
      curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
      curl_easy_setopt(curl, CURLOPT_TIMEOUT, 15L);
 
