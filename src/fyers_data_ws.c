@@ -17,6 +17,7 @@
  #include <stdint.h>
  #include <time.h>
  #include <pthread.h>
+ #include <stdatomic.h>
  #include "fyers_platform.h"
  #include <cjson/cJSON.h>
  #include <openssl/bio.h>
@@ -751,7 +752,7 @@
  } index_entry_t;
 
  static cJSON* g_index_dict_json = NULL;
- static bool g_index_dict_loaded = false;
+ static _Atomic bool g_index_dict_loaded = false;
  static pthread_mutex_t g_index_dict_mutex = PTHREAD_MUTEX_INITIALIZER;
 
  // Hardcoded fallback (used only if public API fetch fails)
@@ -944,13 +945,13 @@
  }
 
  static void ensure_index_dict_loaded(void) {
-     if (g_index_dict_loaded) {
+     if (atomic_load_explicit(&g_index_dict_loaded, memory_order_acquire)) {
          return;
      }
      pthread_mutex_lock(&g_index_dict_mutex);
-     if (!g_index_dict_loaded) {
+     if (!atomic_load_explicit(&g_index_dict_loaded, memory_order_relaxed)) {
          load_index_dict_from_api();
-         g_index_dict_loaded = true;
+         atomic_store_explicit(&g_index_dict_loaded, true, memory_order_release);
      }
      pthread_mutex_unlock(&g_index_dict_mutex);
  }
