@@ -1,0 +1,21 @@
+src/fyers_data_ws.c
+  s_9b1d497244cfbe::t_ffe256f3501f4b 755
+  s_9b1d497244cfbe::t_48106459daa439 20
+  s_9b1d497244cfbe::t_dc65ae77675d6c 948,952,954
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "bb6eee5426acffd8bac7d43ba3e9dfbe4572a3cd",
+  "prompts": {},
+  "sessions": {
+    "s_9b1d497244cfbe": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "afe52cb1-ad22-41fc-83aa-5eff408c259f",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Preethi Harimoorthy <em1112@FYPLMB10250.local>"
+    }
+  }
+}
