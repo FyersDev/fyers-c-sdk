@@ -390,12 +390,12 @@ Activate, already active (HTTP 400, returned as an error with the body unchanged
 
 Status, not active:
 ```json
-{"killswitch": false, "openPositions": 0, "pendingOrders": 0, "message": "Kill Switch is not activated."}
+{"s": "ok", "code": 200, "killswitch": false, "openPositions": 0, "pendingOrders": 0, "message": "Kill Switch is not activated."}
 ```
 
 Status, active:
 ```json
-{"killswitch": true, "openPositions": 0, "pendingOrders": 0, "message": "Kill Switch is activated."}
+{"s": "ok", "code": 200, "killswitch": true, "openPositions": 0, "pendingOrders": 0, "message": "Kill Switch is activated."}
 ```
 
 ## Futures Chain
