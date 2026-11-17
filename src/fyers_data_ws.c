@@ -187,7 +187,7 @@
      
      // Authentication
      char* access_token;
-     char* hsm_token;
+     char* hsm_token;   // full access token, sent as the auth token in the connect message
      bool valid_token;
      
      // Configuration
@@ -327,7 +327,7 @@
      return -1;
  }
  
- // Extract HSM token from JWT
+ // Validate the JWT (format, expiry, hsm_key present) and return the full access token as the auth token
  static int extract_hsm_token(const char* access_token, char** hsm_token_out) {
      if (!access_token || !hsm_token_out) {
          return -1;
@@ -408,7 +408,7 @@
          }
      }
      
-     // Extract hsm_key
+     // hsm_key must still be present in the JWT
      cJSON* hsm_key_item = cJSON_GetObjectItem(json, "hsm_key");
      if (!hsm_key_item || !cJSON_IsString(hsm_key_item)) {
          cJSON_Delete(json);
@@ -418,7 +418,8 @@
          return -1;
      }
      
-     *hsm_token_out = strdup(hsm_key_item->valuestring);
+     // The full access token ("client_id:jwt", as supplied by the user) is sent as the auth token
+     *hsm_token_out = strdup(access_token);
      
      cJSON_Delete(json);
      free(token_copy);
@@ -568,7 +569,7 @@
      // Field count (4)
      buffer[offset++] = 4;
      
-     // Field 1: AuthToken
+     // Field 1: AuthToken (the full access token)
      buffer[offset++] = 1;
      uint16_t field1_size = htons((uint16_t)hsm_token_len);
      memcpy(buffer + offset, &field1_size, 2);
@@ -2405,7 +2406,7 @@
      ws->last_subscription_symbols = NULL;
      ws->last_subscription_count = 0;
      
-     // Extract HSM token
+     // Validate the access token and keep it as the auth token
      int token_rc = extract_hsm_token(access_token, &ws->hsm_token);
      if (token_rc != 0) {
          if (on_error) {
@@ -2416,7 +2417,7 @@
                  ? "{\"type\":\"cn\",\"code\":-99,"
                    "\"message\":\"Token is expired\",\"s\":\"error\"}"
                  : "{\"type\":\"cn\",\"code\":-300,"
-                   "\"message\":\"Please provide valid token\",\"s\":\"error\"}");
+                   "\"message\":\"Access token validation failed\",\"s\":\"error\"}");
          }
          fyers_data_ws_destroy(ws);
          return NULL;
