@@ -109,6 +109,8 @@ fyers_response_t* fyers_http_client_get(fyers_http_client_t* client,
     curl_easy_setopt(client->curl, CURLOPT_URL, url);
     curl_easy_setopt(client->curl, CURLOPT_HTTPHEADER, headers);
     curl_easy_setopt(client->curl, CURLOPT_WRITEDATA, &response_data);
+    // The handle is reused: clear any method left over from a PATCH/DELETE/PUT call
+    curl_easy_setopt(client->curl, CURLOPT_CUSTOMREQUEST, NULL);
     curl_easy_setopt(client->curl, CURLOPT_HTTPGET, 1L);
 
     CURLcode res = curl_easy_perform(client->curl);
@@ -177,6 +179,8 @@ fyers_response_t* fyers_http_client_post(fyers_http_client_t* client,
 
     curl_easy_setopt(client->curl, CURLOPT_URL, url);
     curl_easy_setopt(client->curl, CURLOPT_HTTPHEADER, headers);
+    // The handle is reused: clear any method left over from a PATCH/DELETE/PUT call
+    curl_easy_setopt(client->curl, CURLOPT_CUSTOMREQUEST, NULL);
     curl_easy_setopt(client->curl, CURLOPT_POSTFIELDS, data ? data : "");
     curl_easy_setopt(client->curl, CURLOPT_WRITEDATA, &response_data);
 

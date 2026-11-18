@@ -40,6 +40,8 @@ extern "C" {
 #define FYERS_ENDPOINT_DEPTH "/depth"
 #define FYERS_ENDPOINT_OPTION_CHAIN "/options-chain-v3"
 #define FYERS_ENDPOINT_LOGOUT "/logout"
+#define FYERS_ENDPOINT_KILLSWITCH_ACTIVATE "/killswitch/activate"
+#define FYERS_ENDPOINT_KILLSWITCH_STATUS "/killswitch/status"
 #define FYERS_ENDPOINT_PRICE_ALERT "/price-alert"
 #define FYERS_ENDPOINT_TOGGLE_ALERT "/toggle-alert"
 #define FYERS_ENDPOINT_ORDER_HISTORY "/order-history"

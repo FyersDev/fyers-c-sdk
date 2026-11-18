@@ -136,6 +136,12 @@ FYERS_API fyers_response_t* fyers_model_activate_deactivate_smart_exit_trigger(f
 // Logout
 FYERS_API fyers_response_t* fyers_model_logout(fyers_model_t* model);
 
+// Kill switch
+// WARNING: activating the kill switch blocks trading on the account.
+// On HTTP 400 (e.g. already active) response->error is FYERS_ERROR and the body is returned unchanged.
+FYERS_API fyers_response_t* fyers_model_activate_killswitch(fyers_model_t* model);
+FYERS_API fyers_response_t* fyers_model_get_killswitch_status(fyers_model_t* model);
+
 // Response management
 FYERS_API void fyers_response_destroy(fyers_response_t* response);
 
