@@ -878,6 +878,22 @@
          {"BSE:IPO-INDEX", "BSEIPO"},
          {"BSE:FMC-INDEX", "BSEFMC"},
          {"BSE:SMLSEL-INDEX", "SMLSEL"},
+         {"NSE:NIFTYINDDEFENCE-INDEX", "Nifty Ind Defence"},
+         {"NSE:NIFTYCAPITALMKT-INDEX", "Nifty Capital Mkt"},
+         {"NSE:NIFTYINDTOURISM-INDEX", "Nifty Ind Tourism"},
+         {"NSE:NIFTYINTERNET-INDEX", "Nifty Internet"},
+         {"NSE:NIFTYCHEMICALS-INDEX", "Nifty Chemicals"},
+         {"NSE:NIFTYFPI150-INDEX", "Nifty FPI 150"},
+         {"NSE:NIFTYFINSERVICE-INDEX", "Nifty Fin Service"},
+         {"BSE:FOCIT-INDEX", "FOCIT"},
+         {"NSE:HANGSENGBEES-NAV-INDEX", "HangSeng BeES-NAV"},
+         {"NSE:NIFTY50EQLWGT-INDEX", "NIFTY50 EQL Wgt"},
+         {"NSE:NIFTY100EQLWGT-INDEX", "NIFTY100 EQL Wgt"},
+         {"NSE:NIFTY100LOWVOL30-INDEX", "NIFTY100 LowVol30"},
+         {"NSE:NIFTY ALPHA 50-INDEX", "NIFTY Alpha 50"},
+         {"NIFTYSMLCAP100-INDEX", "NIFTY SMLCAP 100"},
+         {"BSE:SMEIPO-INDEX", "SMEIPO"},
+         {"BSE:SME-IPO-INDEX", "SMEIPO"},
          {NULL, NULL}
      };
      
