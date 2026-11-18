@@ -483,6 +483,15 @@ fyers_response_t* fyers_model_logout(fyers_model_t* model) {
     return make_post_request(model, FYERS_ENDPOINT_LOGOUT, "{}");
 }
 
+// Kill switch
+fyers_response_t* fyers_model_activate_killswitch(fyers_model_t* model) {
+    return make_post_request(model, FYERS_ENDPOINT_KILLSWITCH_ACTIVATE, "{}");
+}
+
+fyers_response_t* fyers_model_get_killswitch_status(fyers_model_t* model) {
+    return make_get_request(model, FYERS_ENDPOINT_KILLSWITCH_STATUS, NULL, false);
+}
+
 fyers_response_t* fyers_model_get_order_history(fyers_model_t* model, const char* params_json) {
     char* query_str = json_to_query_string(params_json);
     
